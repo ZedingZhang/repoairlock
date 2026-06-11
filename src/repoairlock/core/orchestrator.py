@@ -198,8 +198,14 @@ class RunOrchestrator:
                 payload={"patch_bytes": len(patch_content)},
             )
 
-            # 8. Verifier (optional)
-            if config.verify_command:
+            # 8. Verifier (optional). A failed/timed-out agent is already a
+            # terminal outcome, so do not run verifier unless the agent itself
+            # completed successfully.
+            if (
+                config.verify_command
+                and not sandbox_result.timed_out
+                and sandbox_result.exit_code == 0
+            ):
                 ctx.set_status(RunStatus.VERIFYING)
                 manifest.status = RunStatus.VERIFYING
                 verifier_exit_code = self._run_verifier(
@@ -280,21 +286,22 @@ class RunOrchestrator:
                 source="harness.core",
                 payload={"status": str(manifest.status)},
             )
-            store.write_manifest(manifest)
-            store.finalize_manifest(manifest)
 
             # Generate report
             try:
                 from repoairlock.reporting.generator import ReportGenerator
                 gen = ReportGenerator(store.run_dir, ctx.run_id)
-                report_data = gen.generate()
-                store.write_json("report.json", report_data)
-                html = gen.generate_html(report_data)
-                store.write_text("report.html", html)
                 recorder.record(
                     type=EventType.REPORT_GENERATED,
                     source="harness.reporting",
                 )
+                store.write_manifest(manifest)
+                manifest.integrity = store.compute_integrity(include_report=False)
+                store.write_manifest(manifest)
+                report_data = gen.generate()
+                html = gen.generate_html(report_data)
+                store.write_json("report.json", report_data)
+                store.write_text("report.html", html)
             except Exception as report_err:
                 final_status = RunStatus.FAILED
                 manifest.status = final_status
@@ -305,7 +312,11 @@ class RunOrchestrator:
                 )
 
             # Finalize
-            store.finalize_manifest(manifest)
+            manifest.status = final_status
+            store.finalize_manifest(
+                manifest,
+                include_report=(store.run_dir / "report.json").exists(),
+            )
 
         if main_error is not None:
             raise main_error

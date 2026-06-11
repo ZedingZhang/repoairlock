@@ -43,13 +43,21 @@ class ArtifactStore:
         """Write (or overwrite) the manifest atomically."""
         self.write_json("manifest.json", manifest.model_dump(by_alias=True))
 
-    def finalize_manifest(self, manifest: Manifest) -> None:
-        """Finalize the manifest by computing artifact integrity hashes."""
+    def compute_integrity(self, *, include_report: bool = True) -> IntegrityMap:
+        """Compute artifact integrity hashes for files already written."""
         integrity = IntegrityMap()
-        for filename in ("events.jsonl", "patch.diff", "report.json"):
+        filenames = ["events.jsonl", "patch.diff"]
+        if include_report:
+            filenames.append("report.json")
+        for filename in filenames:
             file_path = self._run_dir / filename
             if file_path.exists():
                 integrity.set(filename, sha256_file(file_path))
+        return integrity
+
+    def finalize_manifest(self, manifest: Manifest, *, include_report: bool = True) -> None:
+        """Finalize the manifest by computing artifact integrity hashes."""
+        integrity = self.compute_integrity(include_report=include_report)
         manifest.integrity = integrity
         self.write_manifest(manifest)
 

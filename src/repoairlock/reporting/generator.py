@@ -100,7 +100,6 @@ class ReportGenerator:
             "artifact_integrity": {
                 "events_jsonl": integrity.get("events.jsonl", ""),
                 "patch_diff": integrity.get("patch.diff", ""),
-                "report_json": integrity.get("report.json", ""),
             },
             "replay_instructions": {
                 "command": f"repoairlock replay {self._run_id}",

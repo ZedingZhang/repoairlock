@@ -64,7 +64,11 @@ class ReplayService:
             raise ConfigurationError("patch.diff not found — nothing to replay")
         patch_actual = sha256_file(patch_path)
         patch_expected = manifest.integrity.patch_diff
-        if patch_expected and patch_actual != patch_expected:
+        if not patch_expected:
+            raise ConfigurationError(
+                "Manifest is missing required patch.diff SHA-256 integrity hash."
+            )
+        if patch_actual != patch_expected:
             raise ConfigurationError(
                 f"Patch integrity check FAILED.\n"
                 f"  Expected: {patch_expected}\n"
