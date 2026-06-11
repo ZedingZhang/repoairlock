@@ -198,6 +198,17 @@ class TestWorkspaceEdgeCases:
         assert patch.strip() == ""
         wm.cleanup(clean_repo, wt)
 
+    def test_patch_export_includes_untracked_file(
+        self, clean_repo: Path, wm: WorkspaceManager
+    ) -> None:
+        wt, _ = wm.prepare(clean_repo, "run_untracked_patch")
+        (wt / "new_module.py").write_text("VALUE = 1\n")
+        patch = wm.export_patch(wt)
+        assert "new file mode" in patch
+        assert "+++ b/new_module.py" in patch
+        assert "+VALUE = 1" in patch
+        wm.cleanup(clean_repo, wt)
+
 
 # -- invariant tests -------------------------------------------------------
 

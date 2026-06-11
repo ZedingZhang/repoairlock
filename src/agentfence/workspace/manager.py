@@ -34,7 +34,7 @@ class WorkspaceManager:
     # -- public API --------------------------------------------------------
 
     def prepare(
-        self, source_repo: str | Path, run_id: str
+        self, source_repo: str | Path, run_id: str, *, ref: str | None = None
     ) -> tuple[Path, WorkspaceFingerprint]:
         """Validate repo, capture fingerprint, create detached worktree.
 
@@ -50,7 +50,7 @@ class WorkspaceManager:
         worktree_path = self._tmp_root / f"agentfence-wt-{run_id}"
         if worktree_path.exists():
             shutil.rmtree(worktree_path)
-        self._git.worktree_add_detach(toplevel, worktree_path, before.head_sha)
+        self._git.worktree_add_detach(toplevel, worktree_path, ref or before.head_sha)
 
         # Verify fingerprint unchanged after worktree creation
         after_create = capture_fingerprint(toplevel, self._git)

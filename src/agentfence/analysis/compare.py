@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from pathlib import Path
 
 from agentfence.exceptions import ConfigurationError
@@ -111,12 +112,8 @@ class CompareService:
         if not m.created_at or not m.completed_at:
             return 0
         try:
-            from datetime import UTC, datetime
-            fmt = "%Y-%m-%dT%H:%M:%S."
-            ca = m.created_at[:19]
-            cb = m.completed_at[:19]
-            t0 = datetime.strptime(ca, fmt).replace(tzinfo=UTC)
-            t1 = datetime.strptime(cb, fmt).replace(tzinfo=UTC)
+            t0 = _parse_iso_z(m.created_at)
+            t1 = _parse_iso_z(m.completed_at)
             return int((t1 - t0).total_seconds() * 1000)
         except (ValueError, OSError):
             return 0
@@ -135,3 +132,7 @@ def _parse_patch_stats(patch: str) -> tuple[int, int, int]:
         if line.startswith("-") and not line.startswith("---"):
             deleted += 1
     return files, added, deleted
+
+
+def _parse_iso_z(value: str) -> datetime:
+    return datetime.fromisoformat(value.replace("Z", "+00:00"))

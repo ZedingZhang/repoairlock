@@ -6,6 +6,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -106,6 +107,14 @@ class TestHookSettings:
             for h in hook_group["hooks"]:
                 assert h["type"] == "command"
 
+    def test_hooks_use_current_python_interpreter(self, tmp_path: Path) -> None:
+        handler = tmp_path / "handler.py"
+        handler.write_text("# dummy")
+        settings = _generate_hook_settings(handler)
+
+        hook = settings["hooks"]["PreToolUse"][0]["hooks"][0]
+        assert sys.executable in hook["command"]
+
     def test_settings_is_valid_json(self, tmp_path: Path) -> None:
         handler = tmp_path / "handler.py"
         handler.write_text("# dummy")
@@ -150,7 +159,7 @@ class TestHookHandler:
             "tool_input": tool_input,
         })
         return subprocess.run(
-            ["python3", str(handler_script)],
+            [sys.executable, str(handler_script)],
             input=hook_input,
             capture_output=True,
             text=True,
@@ -241,13 +250,33 @@ class TestHookHandler:
             "AGENTFENCE_RUN_ID": "run_test",
         }
         r = subprocess.run(
-            ["python3", str(handler_script)],
+            [sys.executable, str(handler_script)],
             input="",
             capture_output=True, text=True, check=False, timeout=5,
             env=env,
         )
         result = json.loads(r.stdout.strip())
         assert result["decision"] == "allow"
+
+    def test_policy_engine_unavailable_denies_tool(
+        self, handler_script: Path, events_path: Path
+    ) -> None:
+        broken_script = handler_script.parent / "broken_handler.py"
+        broken_script.write_text(
+            handler_script.read_text().replace(
+                "from agentfence.policy.engine import PolicyEngine",
+                "raise RuntimeError('policy import failed')",
+            )
+        )
+        r = self._invoke_pre_tool(
+            broken_script,
+            events_path,
+            tool_name="Bash",
+            tool_input={"command": "echo hello"},
+        )
+        result = json.loads(r.stdout.strip())
+        assert result["decision"] == "deny"
+        assert "Policy engine unavailable" in result["reason"]
 
     def test_hook_config_does_not_contaminate_global(
         self, tmp_path: Path,

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -10,6 +11,8 @@ from agentfence.artifacts.integrity import sha256_file
 from agentfence.artifacts.serializer import write_json_atomic
 from agentfence.exceptions import ConfigurationError
 from agentfence.replay.service import ReplayService
+from agentfence.workspace.git_client import GitClient
+from agentfence.workspace.manager import WorkspaceManager
 
 
 @pytest.fixture
@@ -20,6 +23,60 @@ def runs_dir(tmp_path: Path) -> Path:
 @pytest.fixture
 def service(runs_dir: Path) -> ReplayService:
     return ReplayService(runs_dir=runs_dir)
+
+
+def _init_repo(path: Path) -> None:
+    path.mkdir(parents=True, exist_ok=True)
+    subprocess.run(["git", "init", "-b", "main"], cwd=path, capture_output=True, check=True)
+    subprocess.run(
+        ["git", "config", "user.email", "test@test.test"],
+        cwd=path, capture_output=True, check=True,
+    )
+    subprocess.run(
+        ["git", "config", "user.name", "Test"],
+        cwd=path, capture_output=True, check=True,
+    )
+
+
+def _commit(path: Path, filename: str, content: str, msg: str) -> str:
+    (path / filename).write_text(content)
+    subprocess.run(["git", "add", filename], cwd=path, capture_output=True, check=True)
+    subprocess.run(["git", "commit", "-m", msg], cwd=path, capture_output=True, check=True)
+    return subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=path,
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.strip()
+
+
+def _write_run_manifest(
+    *,
+    runs_dir: Path,
+    run_id: str,
+    repo: Path,
+    head_sha: str,
+    patch_hash: str,
+) -> None:
+    run_dir = runs_dir / run_id
+    mf = {
+        "schema_version": "1.0",
+        "run_id": run_id,
+        "created_at": "2026-06-11T00:00:00.000Z",
+        "status": "completed",
+        "capability_tier": "tier_0_process_wrapper",
+        "repo": {"source_path": str(repo), "head_sha": head_sha},
+        "adapter": {"name": "command", "version": "0.1.0"},
+        "sandbox": {"image": "img", "network": "none"},
+        "artifacts": {},
+        "integrity": {
+            "events.jsonl": "",
+            "patch.diff": patch_hash,
+            "report.json": "",
+        },
+    }
+    write_json_atomic(run_dir / "manifest.json", mf)
 
 
 class TestReplayErrors:
@@ -109,6 +166,42 @@ class TestReplayErrors:
             service.replay("run_tampered")
 
 
+class TestReplaySuccess:
+    def test_replay_uses_manifest_head_when_repo_has_advanced(
+        self, service: ReplayService, runs_dir: Path, tmp_path: Path
+    ) -> None:
+        repo = tmp_path / "repo"
+        _init_repo(repo)
+        original_head = _commit(repo, "hello.txt", "base\n", "base")
+
+        git = GitClient()
+        wm = WorkspaceManager(git=git)
+        wt, _ = wm.prepare(repo, "make_replay_patch", ref=original_head)
+        (wt / "hello.txt").write_text("patched\n")
+        patch = wm.export_patch(wt)
+        wm.cleanup(repo, wt)
+
+        _commit(repo, "hello.txt", "advanced\n", "advance current repo")
+
+        run_id = "run_replay_old_head"
+        run_dir = runs_dir / run_id
+        run_dir.mkdir(parents=True)
+        patch_path = run_dir / "patch.diff"
+        patch_path.write_text(patch)
+        _write_run_manifest(
+            runs_dir=runs_dir,
+            run_id=run_id,
+            repo=repo,
+            head_sha=original_head,
+            patch_hash=sha256_file(patch_path),
+        )
+
+        result = service.replay(run_id)
+
+        assert result.success
+        assert result.head_sha == original_head
+
+
 class TestParsePatchStats:
     def test_empty_patch(self) -> None:
         from agentfence.analysis.compare import _parse_patch_stats
@@ -158,3 +251,12 @@ class TestCompareResult:
         assert d["run_a"] == "short_a"
         assert d["run_b"] == "short_b"
         assert len(d["fields"]) == 1
+
+    def test_duration_ms_parses_manifest_timestamps(self, tmp_path: Path) -> None:
+        from agentfence.analysis.compare import CompareService
+        from agentfence.models.manifest import Manifest
+        manifest = Manifest.create(run_id="run_duration")
+        manifest.created_at = "2026-06-11T00:00:00.000Z"
+        manifest.completed_at = "2026-06-11T00:00:01.500Z"
+        service = CompareService(runs_dir=tmp_path)
+        assert service._duration_ms(manifest) == 1500

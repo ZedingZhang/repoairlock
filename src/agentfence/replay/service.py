@@ -88,7 +88,7 @@ class ReplayService:
             head_sha = self._git.head_sha(repo_path)
 
         wm = WorkspaceManager(git=self._git)
-        wt_path, _ = wm.prepare(repo_path, f"replay-{run_id}")
+        wt_path, _ = wm.prepare(repo_path, f"replay-{run_id}", ref=head_sha)
         try:
             # 5. Apply patch
             import subprocess
@@ -109,15 +109,14 @@ class ReplayService:
 
             # 6. Verify the applied patch matches stored patch
             new_diff = self._git.diff_worktree(wt_path)
-            # Normalize — both should represent identical changes
             patch_applied = bool(new_diff.strip())
-            patch_stored = bool(patch_content.strip())
+            patch_match = _normalize_patch(new_diff) == _normalize_patch(patch_content)
 
             return ReplayResult(
                 run_id=run_id,
                 integrity_ok=True,
                 patch_applied=patch_applied,
-                patch_match=(not patch_applied and not patch_stored) or patch_applied,
+                patch_match=patch_match,
                 head_sha=head_sha,
                 manifest_status=str(manifest.status.value),
             )
@@ -146,3 +145,8 @@ class ReplayResult:
     @property
     def success(self) -> bool:
         return self.integrity_ok and self.patch_match
+
+
+def _normalize_patch(patch: str) -> str:
+    """Normalize only insignificant trailing whitespace for replay comparison."""
+    return patch.strip()

@@ -30,7 +30,14 @@ def compute_trajectory_metrics(
     verifier_exit_code = -1 if not verifier_configured else verifier_exit_code
 
     # Resource aggregates
-    resource_summary = _aggregate_resources(resource_samples or [])
+    samples = resource_samples
+    if samples is None:
+        samples = [
+            e.get("payload", {})
+            for e in events
+            if e.get("type") == "RESOURCE_SAMPLE"
+        ]
+    resource_summary = _aggregate_resources(samples)
 
     return {
         "wall_time_ms": wall_time_ms,
@@ -113,17 +120,18 @@ def _aggregate_resources(samples: list[Any]) -> dict[str, object]:
             "network_tx_bytes": 0,
             "sample_count": 0,
         }
-    peak_mem = max((s.get("memory_bytes", 0) for s in samples if isinstance(s, dict)), default=0)
-    cpu_vals = [s.get("cpu_percent", 0.0) for s in samples if isinstance(s, dict)]
-    avg_cpu = sum(cpu_vals) / max(len(samples), 1)
-    peak_pids = max((s.get("pids_current", 0) for s in samples if isinstance(s, dict)), default=0)
-    net_rx = sum(s.get("network_rx_bytes", 0) for s in samples if isinstance(s, dict))
-    net_tx = sum(s.get("network_tx_bytes", 0) for s in samples if isinstance(s, dict))
+    dict_samples = [s for s in samples if isinstance(s, dict)]
+    peak_mem = max((s.get("memory_bytes", 0) for s in dict_samples), default=0)
+    cpu_vals = [s.get("cpu_percent", 0.0) for s in dict_samples]
+    avg_cpu = sum(cpu_vals) / max(len(cpu_vals), 1)
+    peak_pids = max((s.get("pids_current", 0) for s in dict_samples), default=0)
+    net_rx = sum(s.get("network_rx_bytes", 0) for s in dict_samples)
+    net_tx = sum(s.get("network_tx_bytes", 0) for s in dict_samples)
     return {
         "peak_memory_bytes": peak_mem,
         "avg_cpu_percent": round(avg_cpu, 2),
         "peak_pids": peak_pids,
         "network_rx_bytes": int(net_rx),
         "network_tx_bytes": int(net_tx),
-        "sample_count": len(samples),
+        "sample_count": len(dict_samples),
     }
