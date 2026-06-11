@@ -55,6 +55,7 @@ def build_docker_run_args(
         "--name", name,
         "--network", config.network,
         "--cap-drop", "ALL",
+        "--cap-add", "DAC_OVERRIDE",
         "--security-opt", "no-new-privileges",
         "--pids-limit", str(config.pids_limit),
         "--cpus", str(config.cpus),
