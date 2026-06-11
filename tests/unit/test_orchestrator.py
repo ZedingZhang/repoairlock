@@ -35,31 +35,40 @@ class FakeDockerBackend:
     def __init__(
         self,
         *,
+        agent_exit_code: int = 0,
+        agent_timed_out: bool = False,
         verifier_exit_code: int = 0,
         mutate_source_repo: Path | None = None,
     ) -> None:
+        self._agent_exit_code = agent_exit_code
+        self._agent_timed_out = agent_timed_out
         self._verifier_exit_code = verifier_exit_code
         self._mutate_source_repo = mutate_source_repo
+        self.agent_runs = 0
+        self.verifier_runs = 0
 
     def assert_available(self) -> None:
         return
 
     def run(self, config: SandboxConfig) -> RunResult:
         if config.run_id.endswith("-verify"):
+            self.verifier_runs += 1
             return RunResult(
                 exit_code=self._verifier_exit_code,
                 stdout="verify\n",
                 stderr="",
                 duration_ms=5,
             )
+        self.agent_runs += 1
         if self._mutate_source_repo is not None:
             (self._mutate_source_repo / "hello.txt").write_text("mutated source\n")
         (config.workspace / "hello.txt").write_text("patched\n")
         return RunResult(
-            exit_code=0,
+            exit_code=self._agent_exit_code,
             stdout="ok\n",
             stderr="",
             duration_ms=12,
+            timed_out=self._agent_timed_out,
             resource_samples=[
                 ResourceSample(
                     timestamp=1.0,
@@ -101,8 +110,9 @@ def test_orchestrator_finalizes_events_report_and_integrity(tmp_path: Path) -> N
     assert manifest["integrity"]["report.json"] == sha256_file(result.run_dir / "report.json")
     assert report["run_summary"]["status"] == "completed"
     assert report["run_summary"]["head_sha"]
-    assert report["artifact_integrity"]["events_jsonl"]
-    assert report["artifact_integrity"]["patch_diff"]
+    assert report["artifact_integrity"]["events_jsonl"] == manifest["integrity"]["events.jsonl"]
+    assert report["artifact_integrity"]["patch_diff"] == manifest["integrity"]["patch.diff"]
+    assert "report_json" not in report["artifact_integrity"]
     assert report["resource_usage"]["sample_count"] == 1
     assert {event["type"] for event in events} >= {"RUN_COMPLETED", "REPORT_GENERATED"}
 
@@ -129,6 +139,54 @@ def test_verifier_failure_sets_final_status(tmp_path: Path) -> None:
     assert result.verifier_exit_code == 2
     assert manifest["status"] == "verification_failed"
     assert "VERIFICATION_FAILED" in events
+
+
+def test_verifier_skipped_when_agent_exits_nonzero(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+
+    backend = FakeDockerBackend(agent_exit_code=7, verifier_exit_code=0)
+    orchestrator = RunOrchestrator()
+    orchestrator._docker = backend
+    result = orchestrator.execute(
+        RunConfig(
+            repo=repo,
+            agent_command=["fake-agent"],
+            image="fake-image",
+            verify_command=["fake-verify"],
+            runs_dir=tmp_path / "runs",
+        )
+    )
+
+    events = _read_event_types(result.run_dir)
+    assert result.status == RunStatus.FAILED
+    assert result.verifier_exit_code is None
+    assert backend.verifier_runs == 0
+    assert "VERIFICATION_STARTED" not in events
+
+
+def test_verifier_skipped_when_agent_times_out(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+
+    backend = FakeDockerBackend(agent_timed_out=True, verifier_exit_code=0)
+    orchestrator = RunOrchestrator()
+    orchestrator._docker = backend
+    result = orchestrator.execute(
+        RunConfig(
+            repo=repo,
+            agent_command=["fake-agent"],
+            image="fake-image",
+            verify_command=["fake-verify"],
+            runs_dir=tmp_path / "runs",
+        )
+    )
+
+    events = _read_event_types(result.run_dir)
+    assert result.status == RunStatus.TIMED_OUT
+    assert result.verifier_exit_code is None
+    assert backend.verifier_runs == 0
+    assert "VERIFICATION_STARTED" not in events
 
 
 def test_cleanup_failure_sets_final_status_after_main_flow(

@@ -210,6 +210,34 @@ class TestReplayErrors:
         with pytest.raises(ConfigurationError, match="Patch integrity check FAILED"):
             service.replay("run_tampered")
 
+    def test_missing_patch_integrity_hash_fails_closed(
+        self, service: ReplayService, runs_dir: Path, tmp_path: Path
+    ) -> None:
+        run_dir = runs_dir / "run_missing_patch_hash"
+        run_dir.mkdir(parents=True)
+        patch_path = run_dir / "patch.diff"
+        patch_path.write_text("")
+        mf = {
+            "schema_version": "1.0",
+            "run_id": "run_missing_patch_hash",
+            "created_at": "2026-06-11T00:00:00.000Z",
+            "status": "completed",
+            "capability_tier": "tier_0_process_wrapper",
+            "repo": {"source_path": str(tmp_path / "repo"), "head_sha": ""},
+            "adapter": {"name": "command", "version": "0.1.0"},
+            "sandbox": {"image": "img", "network": "none"},
+            "artifacts": {},
+            "integrity": {
+                "events.jsonl": "",
+                "patch.diff": "",
+                "report.json": "",
+            },
+        }
+        write_json_atomic(run_dir / "manifest.json", mf)
+
+        with pytest.raises(ConfigurationError, match="missing required patch.diff"):
+            service.replay("run_missing_patch_hash")
+
 
 class TestReplaySuccess:
     def test_replay_uses_manifest_head_when_repo_has_advanced(
