@@ -11,10 +11,10 @@ workspace = Path("/workspace")
 target = workspace / "hello.py"
 if target.exists():
     content = target.read_text()
-    content = content.replace("Hello, World!", "Hello, AgentFence!")
+    content = content.replace("Hello, World!", "Hello, RepoAirlock!")
     target.write_text(content)
     print(f"Patched {target.name}")
 else:
     print("hello.py not found — creating it")
-    target.write_text('print("Hello, AgentFence!")\n')
+    target.write_text('print("Hello, RepoAirlock!")\n')
 sys.exit(0)

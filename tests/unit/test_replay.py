@@ -7,12 +7,12 @@ from pathlib import Path
 
 import pytest
 
-from agentfence.artifacts.integrity import sha256_file
-from agentfence.artifacts.serializer import write_json_atomic
-from agentfence.exceptions import ConfigurationError
-from agentfence.replay.service import ReplayService
-from agentfence.workspace.git_client import GitClient
-from agentfence.workspace.manager import WorkspaceManager
+from repoairlock.artifacts.integrity import sha256_file
+from repoairlock.artifacts.serializer import write_json_atomic
+from repoairlock.exceptions import ConfigurationError
+from repoairlock.replay.service import ReplayService
+from repoairlock.workspace.git_client import GitClient
+from repoairlock.workspace.manager import WorkspaceManager
 
 
 @pytest.fixture
@@ -310,14 +310,14 @@ class TestReplaySuccess:
 
 class TestParsePatchStats:
     def test_empty_patch(self) -> None:
-        from agentfence.analysis.compare import _parse_patch_stats
+        from repoairlock.analysis.compare import _parse_patch_stats
         files, added, deleted = _parse_patch_stats("")
         assert files == 0
         assert added == 0
         assert deleted == 0
 
     def test_single_file_patch(self) -> None:
-        from agentfence.analysis.compare import _parse_patch_stats
+        from repoairlock.analysis.compare import _parse_patch_stats
         patch = (
             "diff --git a/hello.py b/hello.py\n"
             "--- a/hello.py\n"
@@ -334,14 +334,14 @@ class TestParsePatchStats:
 
 class TestCompareResult:
     def test_format_empty(self) -> None:
-        from agentfence.analysis.compare import CompareResult
+        from repoairlock.analysis.compare import CompareResult
         cr = CompareResult("run_a", "run_b")
         output = cr.format()
         assert "run_a" in output
         assert "run_b" in output
 
     def test_format_with_fields(self) -> None:
-        from agentfence.analysis.compare import CompareResult
+        from repoairlock.analysis.compare import CompareResult
         cr = CompareResult("run_a", "run_b")
         cr.add("Status", "completed", "failed")
         cr.add("Exit code", "0", "1")
@@ -350,7 +350,7 @@ class TestCompareResult:
         assert "failed" in output
 
     def test_to_dict(self) -> None:
-        from agentfence.analysis.compare import CompareResult
+        from repoairlock.analysis.compare import CompareResult
         cr = CompareResult("short_a", "short_b")
         cr.add("Status", "completed", "failed")
         d = cr.to_dict()
@@ -359,8 +359,8 @@ class TestCompareResult:
         assert len(d["fields"]) == 1
 
     def test_duration_ms_parses_manifest_timestamps(self, tmp_path: Path) -> None:
-        from agentfence.analysis.compare import CompareService
-        from agentfence.models.manifest import Manifest
+        from repoairlock.analysis.compare import CompareService
+        from repoairlock.models.manifest import Manifest
         manifest = Manifest.create(run_id="run_duration")
         manifest.created_at = "2026-06-11T00:00:00.000Z"
         manifest.completed_at = "2026-06-11T00:00:01.500Z"

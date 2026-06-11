@@ -1,4 +1,4 @@
-# AgentFence Invariants
+# RepoAirlock Invariants
 
 > All invariants must be covered by automated tests.
 
@@ -14,7 +14,7 @@ No execution path may modify the user's original working tree.
 
 ## INV-002 No silent local execution
 
-When the isolation backend is unavailable, `agentfence run` must fail.
+When the isolation backend is unavailable, `repoairlock run` must fail.
 
 **Test requirements:**
 - Docker unavailable → run fails with clear error

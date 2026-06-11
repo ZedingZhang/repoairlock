@@ -1,4 +1,4 @@
-# AgentFence
+# RepoAirlock
 
 Safety-oriented execution harness for coding agents.
 
@@ -14,12 +14,12 @@ policy enforcement, it is difficult to answer basic questions:
 - Can we replay its changes?
 - Was the original workspace preserved?
 
-AgentFence answers these questions through isolation, structured audit trails,
+RepoAirlock answers these questions through isolation, structured audit trails,
 and reproducible artifacts.
 
-## What AgentFence Does
+## What RepoAirlock Does
 
-AgentFence runs coding agents inside isolated Docker containers with git
+RepoAirlock runs coding agents inside isolated Docker containers with git
 worktree isolation, records structured execution traces, enforces safety
 policies, and exports reproducible artifacts — all without modifying the
 user's original working tree.
@@ -30,40 +30,41 @@ user's original working tree.
 |------|------|-------------|
 | 0 | Process Wrapper | Container isolation, artifact recording, patch export, resource monitoring, HTML reports |
 | 1 | Structured Events | Import agent tool-call traces for process quality metrics |
-| 2 | Enforcement | Pre-execution policy checks on individual tool calls (Bash/Edit/Write) |
+| 2 | Enforcement (preview only) | Pre-execution policy checks on individual tool calls (Bash/Edit/Write) via Claude Code hook adapter |
 
-**Current status:** Tier 0 stabilization in progress. Claude Code Tier 2 hook
-adapter exists, but the v0.1 CLI `run` path currently uses the command adapter.
+**Current status:** v0.1.0-alpha candidate. Tier 0 stabilization in progress.
+Claude Code Tier 2 hook adapter module is preview only; the v0.1 CLI `run` path
+uses the command adapter.
 
 ## 5-Minute Demo
 
 ```bash
 # 1. Install
-git clone <repo-url> && cd agentfence
+git clone <repo-url> && cd repoairlock
 python3.12 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 
 # 2. Check your environment
-agentfence doctor
+repoairlock doctor
 
 # 3. Run an agent in the sandbox
-agentfence run \
+repoairlock run \
   --repo examples/demo-repo \
   --image alpine:latest \
-  -- sh -c "echo 'print(\"Hello, AgentFence!\")' > /workspace/hello.py"
+  -- sh -c "echo 'print(\"Hello, RepoAirlock!\")' > /workspace/hello.py"
 
 # 4. Inspect the results
-agentfence list
-agentfence inspect <run-id>
+repoairlock list
+repoairlock inspect <run-id>
 
 # 5. Replay the patch (no agent re-invocation)
-agentfence replay <run-id> --repo examples/demo-repo
+repoairlock replay <run-id> --repo examples/demo-repo
 
 # 6. Compare two runs
-agentfence compare <run-a> <run-b>
+repoairlock compare <run-a> <run-b>
 
 # 7. View the HTML report
-open ~/.agentfence/runs/<run-id>/report.html
+open ~/.repoairlock/runs/<run-id>/report.html
 ```
 
 ## Safety Guarantees
@@ -71,14 +72,15 @@ open ~/.agentfence/runs/<run-id>/report.html
 - Agent never runs in the user's original working tree (INV-001)
 - Containers run without network, without privileges, with CPU/memory/PID limits by default
 - Environment variables are injected via explicit allowlist — never the full host environment
-- Every run produces auditable artifacts (manifest, events, logs, patch, report) even on failure
+- Every sandbox execution attempt produces auditable artifacts (manifest, events, logs, patch, report) even on failure
 - Original workspace fingerprints are verified before and after every run
 - Patch integrity verified via SHA-256 before replay
-- 12 default policy rules deny destructive operations
+- Sandbox-configuration policy enforcement rejects dangerous Docker parameters at construction time
+- Command-level enforcement is only active when the Tier 2 Claude Code hook adapter is used
 
 ## Explicit Non-Guarantees
 
-AgentFence **does not** and **cannot** guarantee:
+RepoAirlock **does not** and **cannot** guarantee:
 
 - Prevention of container escape (this is a property of the Docker runtime)
 - Observability of all agent internal actions at Tier 0
@@ -86,14 +88,14 @@ AgentFence **does not** and **cannot** guarantee:
 - Absolute isolation (Docker is a process-level boundary, not a hardware boundary)
 - Network egress filtering beyond on/off at Tier 0
 
-AgentFence is a **safety harness**, not a security sandbox. When you explicitly
+RepoAirlock is a **safety harness**, not a security sandbox. When you explicitly
 enable network access (`--network bridge`), the agent can make outbound connections.
 
 ## Architecture
 
 ```
                         ┌────────────────────────────┐
-                        │        agentfence CLI       │
+                        │        repoairlock CLI       │
                         │  run / inspect / replay /   │
                         │  compare / list / doctor    │
                         └──────────────┬─────────────┘
@@ -131,7 +133,7 @@ enable network access (`--network bridge`), the agent can make outbound connecti
 
 ## Example Report
 
-Run `agentfence run --repo examples/demo-repo --image alpine -- sh -c "..."` to generate an HTML report with these sections:
+Run `repoairlock run --repo examples/demo-repo --image alpine -- sh -c "..."` to generate an HTML report with these sections:
 
 1. **Run Summary** — status, wall time, exit code, HEAD SHA
 2. **Safety Posture** — network mode, privileged status, env allowlist, INV-001
@@ -150,7 +152,7 @@ Every report explicitly states the capability tier and what conclusions
 | Adapter | Tier | Description |
 |---------|------|-------------|
 | `command` | 0 | Any CLI agent — wraps command as-is for sandbox execution |
-| `claude_code` | 2 | Claude Code hook adapter module — PreToolUse policy enforcement + PostToolUse recording; CLI wiring is not exposed in v0.1 |
+| `claude_code` | 2 (preview only) | Claude Code hook adapter module — PreToolUse policy enforcement + PostToolUse recording; CLI wiring is not exposed in v0.1 |
 
 ## Development Roadmap
 
@@ -193,7 +195,7 @@ pytest -q tests/e2e          # e2e tests (requires Docker)
 
 ## Attribution
 
-AgentFence is a safety harness for coding agents. It does **not** perform code
+RepoAirlock is a safety harness for coding agents. It does **not** perform code
 generation, LLM inference, or autonomous repair. It does **not** guarantee
 "complete security" or "absolute isolation." It provides a structured,
 auditable, and reproducible execution environment so that agent actions

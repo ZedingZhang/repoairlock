@@ -8,18 +8,18 @@ from pathlib import Path
 
 import pytest
 
-from agentfence.artifacts.integrity import sha256_file, sha256_hex
-from agentfence.artifacts.store import ArtifactStore
-from agentfence.core.lifecycle import (
+from repoairlock.artifacts.integrity import sha256_file, sha256_hex
+from repoairlock.artifacts.store import ArtifactStore
+from repoairlock.core.lifecycle import (
     EventRecorder,
     record_run_created,
     record_run_failed,
 )
-from agentfence.core.run_context import generate_run_id
-from agentfence.exceptions import ArtifactWriteError
-from agentfence.models.enums import RunStatus
-from agentfence.models.events import EventType
-from agentfence.models.manifest import Manifest
+from repoairlock.core.run_context import generate_run_id
+from repoairlock.exceptions import ArtifactWriteError
+from repoairlock.models.enums import RunStatus
+from repoairlock.models.events import EventType
+from repoairlock.models.manifest import Manifest
 
 
 @pytest.fixture

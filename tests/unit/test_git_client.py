@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from agentfence.exceptions import WorkspaceError
-from agentfence.workspace.git_client import GitClient
+from repoairlock.exceptions import WorkspaceError
+from repoairlock.workspace.git_client import GitClient
 
 
 class TestGitClientErrors:

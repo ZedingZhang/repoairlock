@@ -11,9 +11,9 @@ from pathlib import Path
 
 import pytest
 
-from agentfence.exceptions import EnvironmentError
-from agentfence.sandbox.base import SandboxConfig
-from agentfence.sandbox.docker import DockerBackend
+from repoairlock.exceptions import EnvironmentError
+from repoairlock.sandbox.base import SandboxConfig
+from repoairlock.sandbox.docker import DockerBackend
 
 _DOCKER_AVAILABLE = shutil.which("docker") is not None
 
@@ -148,7 +148,7 @@ class TestDockerRun:
         # Container should be removed after run
         cmd = [
             "docker", "ps", "-a",
-            "--filter", "name=agentfence-itest_cleanup",
+            "--filter", "name=repoairlock-itest_cleanup",
             "--format", "{{.ID}}",
         ]
         r = subprocess.run(cmd, capture_output=True, text=True, check=False)

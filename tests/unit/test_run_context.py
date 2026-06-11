@@ -5,8 +5,8 @@ from __future__ import annotations
 import time
 from pathlib import Path
 
-from agentfence.core.run_context import RunContext, generate_run_id
-from agentfence.models.enums import RunStatus
+from repoairlock.core.run_context import RunContext, generate_run_id
+from repoairlock.models.enums import RunStatus
 
 
 class TestGenerateRunId:
