@@ -69,7 +69,7 @@ open ~/.repoairlock/runs/<run-id>/report.html
 - 容器默认无网络、无特权、有 CPU/内存/PID 限制
 - 环境变量通过显式 allowlist 注入——绝不传递整个主机环境
 - 每次沙箱执行尝试即使失败也生成可审计工件（manifest、events、logs、patch、report）
-- 每次运行前后验证原始工作区指纹
+- 每次沙箱执行前后验证原始工作区指纹
 - Patch 重放前通过 SHA-256 验证完整性
 - Sandbox 配置策略执行：在构造阶段拒绝危险的 Docker 参数
 - 命令级策略执行仅在启用 Tier 2 Claude Code hook adapter 时生效
