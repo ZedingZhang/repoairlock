@@ -8,7 +8,8 @@ from pathlib import Path
 
 import repoairlock.core.orchestrator as orchestrator_module
 from repoairlock.artifacts.integrity import sha256_file
-from repoairlock.core.orchestrator import RunConfig, RunOrchestrator
+from repoairlock.artifacts.store import ArtifactStore
+from repoairlock.core.orchestrator import RunConfig, RunOrchestrator, merge_status
 from repoairlock.exceptions import CleanupError
 from repoairlock.models.enums import RunStatus
 from repoairlock.sandbox.base import ResourceSample, RunResult, SandboxConfig
@@ -114,7 +115,10 @@ def test_orchestrator_finalizes_events_report_and_integrity(tmp_path: Path) -> N
     assert report["artifact_integrity"]["patch_diff"] == manifest["integrity"]["patch.diff"]
     assert "report_json" not in report["artifact_integrity"]
     assert report["resource_usage"]["sample_count"] == 1
-    assert {event["type"] for event in events} >= {"RUN_COMPLETED", "REPORT_GENERATED"}
+    assert {event["type"] for event in events} >= {
+        "RUN_COMPLETED",
+        "REPORT_GENERATION_STARTED",
+    }
 
 
 def test_verifier_failure_sets_final_status(tmp_path: Path) -> None:
@@ -241,6 +245,79 @@ def test_invariant_violation_sets_final_status(tmp_path: Path) -> None:
     assert result.status == RunStatus.INVARIANT_VIOLATION
     assert manifest["status"] == "invariant_violation"
     assert "INVARIANT_VIOLATION" in events
+
+
+def test_report_write_failure_removes_partial_report_files(
+    tmp_path: Path, monkeypatch
+) -> None:
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    original_write_text = ArtifactStore.write_text
+
+    def fail_report_html_write(self, name: str, content: str) -> None:
+        if name == "report.html":
+            (self.run_dir / "report.html").write_text("partial")
+            raise OSError("forced report html write failure")
+        original_write_text(self, name, content)
+
+    monkeypatch.setattr(ArtifactStore, "write_text", fail_report_html_write)
+    orchestrator = RunOrchestrator()
+    orchestrator._docker = FakeDockerBackend()
+    result = orchestrator.execute(
+        RunConfig(
+            repo=repo,
+            agent_command=["fake-agent"],
+            image="fake-image",
+            runs_dir=tmp_path / "runs",
+        )
+    )
+
+    manifest = json.loads((result.run_dir / "manifest.json").read_text())
+    assert result.status == RunStatus.FAILED
+    assert manifest["status"] == "failed"
+    assert not (result.run_dir / "report.json").exists()
+    assert not (result.run_dir / "report.html").exists()
+    assert manifest["integrity"]["report.json"] == ""
+
+
+def test_report_failure_does_not_override_invariant_violation(
+    tmp_path: Path, monkeypatch
+) -> None:
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    original_write_text = ArtifactStore.write_text
+
+    def fail_report_html_write(self, name: str, content: str) -> None:
+        if name == "report.html":
+            (self.run_dir / "report.html").write_text("partial")
+            raise OSError("forced report html write failure")
+        original_write_text(self, name, content)
+
+    monkeypatch.setattr(ArtifactStore, "write_text", fail_report_html_write)
+    orchestrator = RunOrchestrator()
+    orchestrator._docker = FakeDockerBackend(mutate_source_repo=repo)
+    result = orchestrator.execute(
+        RunConfig(
+            repo=repo,
+            agent_command=["fake-agent"],
+            image="fake-image",
+            runs_dir=tmp_path / "runs",
+        )
+    )
+
+    manifest = json.loads((result.run_dir / "manifest.json").read_text())
+    assert result.status == RunStatus.INVARIANT_VIOLATION
+    assert manifest["status"] == "invariant_violation"
+    assert not (result.run_dir / "report.json").exists()
+    assert not (result.run_dir / "report.html").exists()
+
+
+def test_merge_status_preserves_higher_priority_status() -> None:
+    assert (
+        merge_status(RunStatus.INVARIANT_VIOLATION, RunStatus.FAILED)
+        == RunStatus.INVARIANT_VIOLATION
+    )
+    assert merge_status(RunStatus.COMPLETED, RunStatus.FAILED) == RunStatus.FAILED
 
 
 def _read_event_types(run_dir: Path) -> set[str]:

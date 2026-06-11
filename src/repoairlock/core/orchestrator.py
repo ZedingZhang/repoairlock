@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 from collections.abc import Sequence
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
@@ -292,7 +293,7 @@ class RunOrchestrator:
                 from repoairlock.reporting.generator import ReportGenerator
                 gen = ReportGenerator(store.run_dir, ctx.run_id)
                 recorder.record(
-                    type=EventType.REPORT_GENERATED,
+                    type=EventType.REPORT_GENERATION_STARTED,
                     source="harness.reporting",
                 )
                 store.write_manifest(manifest)
@@ -303,7 +304,8 @@ class RunOrchestrator:
                 store.write_json("report.json", report_data)
                 store.write_text("report.html", html)
             except Exception as report_err:
-                final_status = RunStatus.FAILED
+                _remove_partial_report_files(store.run_dir)
+                final_status = merge_status(final_status, RunStatus.FAILED)
                 manifest.status = final_status
                 recorder.record(
                     type=EventType.RUN_FAILED,
@@ -385,6 +387,31 @@ def _now_iso() -> str:
     from datetime import UTC, datetime
     now = datetime.now(UTC)
     return now.strftime("%Y-%m-%dT%H:%M:%S.") + f"{now.microsecond // 1000:03d}Z"
+
+
+def merge_status(current: RunStatus, incoming: RunStatus) -> RunStatus:
+    """Merge status updates without masking higher-priority failure causes."""
+    return max((current, incoming), key=_status_priority)
+
+
+def _status_priority(status: RunStatus) -> int:
+    priorities = {
+        RunStatus.COMPLETED: 0,
+        RunStatus.FAILED: 10,
+        RunStatus.POLICY_BLOCKED: 20,
+        RunStatus.VERIFICATION_FAILED: 30,
+        RunStatus.TIMED_OUT: 40,
+        RunStatus.CANCELLED: 50,
+        RunStatus.CLEANUP_FAILED: 60,
+        RunStatus.INVARIANT_VIOLATION: 70,
+    }
+    return priorities.get(status, -1)
+
+
+def _remove_partial_report_files(run_dir: Path) -> None:
+    for filename in ("report.json", "report.json.tmp", "report.html"):
+        with contextlib.suppress(OSError):
+            (run_dir / filename).unlink()
 
 
 def _final_event_type(status: RunStatus) -> EventType:
