@@ -97,10 +97,12 @@ $ pytest tests/unit -q  # all pass
 ```bash
 $ SKIP_DOCKER_MOUNT_TESTS=0 pytest tests/integration tests/e2e -q -v
 ```
-- Requires a Docker daemon with working `--mount type=bind` support.
-- GitHub Actions `ubuntu-latest` images currently fail the bind-mount path
-  when run from the default check job; a dedicated `full-docker-e2e` workflow
-  is available for manual verification on a compatible runner.
+- **Status (2026-06-11): FAILED on GitHub Actions `ubuntu-latest`.**
+- Root cause: `docker run --mount type=bind,src=<path>` returns exit 125
+  on GitHub Actions runners. This is a Docker daemon restriction in the
+  hosted runner environment, not a code defect.
+- To verify locally: run the commands above on a machine with unrestricted
+  Docker daemon access (e.g., a local Linux host with native Docker).
 
 ```bash
 $ repoairlock --help   # 7 commands listed
