@@ -32,7 +32,7 @@ user's original working tree.
 | 1 | Structured Events | Import agent tool-call traces for process quality metrics |
 | 2 | Enforcement (preview only) | Pre-execution policy checks on individual tool calls (Bash/Edit/Write) via Claude Code hook adapter |
 
-**Current status:** v0.1.1-alpha candidate. Tier 0 stabilization in progress.
+**Current status:** v0.1.1-alpha, Tier 0 stabilization in progress.
 Claude Code Tier 2 hook adapter module is preview only; the v0.1 CLI `run` path
 uses the command adapter.
 
