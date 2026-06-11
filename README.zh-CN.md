@@ -28,8 +28,8 @@ AgentFence 在隔离的 Docker 容器中使用 git worktree 隔离运行 coding 
 | 1 | Structured Events | 导入 agent 工具调用轨迹用于过程质量分析 |
 | 2 | Enforcement | 对单个工具调用（Bash/Edit/Write）进行执行前策略检查 |
 
-**当前状态：** Tier 0 完成（MVP）。Claude Code Tier 2 hook adapter
-模块已存在，但 v0.1 的 CLI `run` 路径当前使用 command adapter。
+**当前状态：** Tier 0 stabilization in progress。Claude Code Tier 2 hook
+adapter 模块已存在，但 v0.1 的 CLI `run` 路径当前使用 command adapter。
 
 ## 5 分钟体验
 
@@ -159,7 +159,7 @@ AgentFence 是一个**安全 Harness**，不是安全沙箱。当你显式启用
 | 6 | 完成 | 指标与 HTML 报告 |
 | 7 | 完成 | Policy Engine（12 条默认规则） |
 | 8 | 完成 | Claude Code Tier 2 hook adapter 模块 |
-| 9 | 完成 | 稳定化与公开发布 |
+| 9 | 未开始 | 稳定化与公开发布 |
 
 详见 [docs/progress.md](docs/progress.md)。
 

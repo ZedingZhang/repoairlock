@@ -32,8 +32,8 @@ user's original working tree.
 | 1 | Structured Events | Import agent tool-call traces for process quality metrics |
 | 2 | Enforcement | Pre-execution policy checks on individual tool calls (Bash/Edit/Write) |
 
-**Current status:** Tier 0 complete (MVP). Claude Code Tier 2 hook adapter
-exists, but the v0.1 CLI `run` path currently uses the command adapter.
+**Current status:** Tier 0 stabilization in progress. Claude Code Tier 2 hook
+adapter exists, but the v0.1 CLI `run` path currently uses the command adapter.
 
 ## 5-Minute Demo
 
@@ -165,7 +165,7 @@ Every report explicitly states the capability tier and what conclusions
 | 6 | Done | Metrics + HTML report |
 | 7 | Done | Policy engine (12 default rules) |
 | 8 | Done | Claude Code Tier 2 hook adapter module |
-| 9 | Done | Stabilization + public release |
+| 9 | Not started | Stabilization + public release |
 
 See [docs/progress.md](docs/progress.md) for details.
 
