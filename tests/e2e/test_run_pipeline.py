@@ -60,16 +60,21 @@ def _ensure_image(name: str) -> None:
         )
 
 
+def _dump_diagnostics(run_dir: Path) -> str:
+    """Collect diagnostic output from a failed run."""
+    lines: list[str] = []
+    for fname in ("stdout.log", "stderr.log"):
+        p = run_dir / fname
+        if p.exists():
+            lines.append(f"--- {fname} ---")
+            lines.append(p.read_text()[:2000])
+    return "\n".join(lines)
+
+
 @pytest.fixture
 def image() -> str:
     _ensure_image("alpine:latest")
     return "alpine:latest"
-
-
-@pytest.fixture
-def python_image() -> str:
-    _ensure_image("python:3.12-alpine")
-    return "python:3.12-alpine"
 
 
 @pytest.fixture
@@ -85,26 +90,40 @@ def clean_repo(tmp_path: Path) -> Path:
 @docker_required
 class TestE2EPipeline:
     def test_success_agent_produces_patch(
-        self, clean_repo: Path, python_image: str
+        self, clean_repo: Path
     ) -> None:
         """A successful agent run produces manifest, events, patch, and leaves source intact."""
         original_content = (clean_repo / "hello.py").read_text()
 
         config = RunConfig(
             repo=clean_repo,
-            agent_command=["python", "/tmp/agent_success.py"],
-            image=python_image,
+            agent_command=[
+                "python", "-c",
+                (
+                    "from pathlib import Path;"
+                    "p = Path('/workspace/hello.py');"
+                    "content = p.read_text();"
+                    "p.write_text(content.replace('Hello, World!', 'Hello, PatchGuard!'))"
+                ),
+            ],
+            image="python:3.12-alpine",
             timeout=60,
             network="none",
-            # Mount agent script into workspace area via env-based approach
-            # The agent looks for /workspace/hello.py
         )
 
         orchestrator = RunOrchestrator()
         result = orchestrator.execute(config)
 
-        assert result.status.value in ("completed", "failed", "agent_failed")
-        assert result.exit_code in (0, 1)
+        if result.exit_code != 0 or result.status.value != "completed":
+            diag = _dump_diagnostics(result.run_dir)
+            pytest.fail(
+                f"Expected completed/exit 0, got {result.status.value}/{result.exit_code}\n"
+                f"Diagnostics:\n{diag}"
+            )
+
+        assert result.status.value == "completed"
+        assert result.exit_code == 0
+        assert result.patch_bytes > 0
 
         # Original repo unchanged
         assert (clean_repo / "hello.py").read_text() == original_content
@@ -140,7 +159,13 @@ class TestE2EPipeline:
         orchestrator = RunOrchestrator()
         result = orchestrator.execute(config)
 
-        # Should complete (even though "modified" is not valid Python, agent exited 0)
+        if result.exit_code != 0:
+            diag = _dump_diagnostics(result.run_dir)
+            pytest.fail(
+                f"Expected exit 0, got {result.exit_code}\n"
+                f"Diagnostics:\n{diag}"
+            )
+
         assert result.exit_code == 0
         assert result.patch_bytes > 0
 
@@ -152,7 +177,7 @@ class TestE2EPipeline:
         assert "modified" in patch
 
     def test_failure_agent_produces_artifacts(
-        self, clean_repo: Path, python_image: str
+        self, clean_repo: Path
     ) -> None:
         """A failing agent still produces minimum artifacts."""
         original_content = (clean_repo / "hello.py").read_text()
@@ -163,7 +188,7 @@ class TestE2EPipeline:
                 "python", "-c",
                 "import sys; sys.stderr.write('error!\\n'); sys.exit(1)",
             ],
-            image=python_image,
+            image="python:3.12-alpine",
             timeout=30,
             network="none",
         )
@@ -202,6 +227,13 @@ class TestE2EPipeline:
         )
         orchestrator = RunOrchestrator()
         result = orchestrator.execute(config)
+
+        if result.exit_code != 0:
+            diag = _dump_diagnostics(result.run_dir)
+            pytest.fail(
+                f"Expected exit 0, got {result.exit_code}\n"
+                f"Diagnostics:\n{diag}"
+            )
 
         assert result.exit_code == 0
         # Source file NOT modified

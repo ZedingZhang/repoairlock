@@ -3,7 +3,39 @@ name: Full Docker E2E
 on: workflow_dispatch
 
 jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Host info
+        run: |
+          echo "=== id ===" && id
+          echo "=== pwd ===" && pwd
+          echo "=== ls -la . ===" && ls -la .
+          echo "=== stat . ===" && stat .
+
+      - name: Bind-mount write smoke test
+        run: |
+          mkdir -p /tmp/smoke-ws
+          echo "original" > /tmp/smoke-ws/hello.py
+          echo "=== Host before ==="
+          cat /tmp/smoke-ws/hello.py
+          stat /tmp/smoke-ws/hello.py
+          docker run --rm \
+            --network none \
+            --read-only \
+            --mount "type=bind,src=/tmp/smoke-ws,dst=/workspace" \
+            --workdir /workspace \
+            alpine:latest \
+            sh -c "echo '=== container id ===' && id && echo '=== ls ===' && ls -la /workspace && echo '=== stat ===' && stat /workspace/hello.py && echo modified > /workspace/hello.py && echo '=== after write ===' && cat /workspace/hello.py"
+          echo "=== Host after ==="
+          cat /tmp/smoke-ws/hello.py
+          stat /tmp/smoke-ws/hello.py
+          rm -rf /tmp/smoke-ws
+
   e2e:
+    needs: smoke
     runs-on: ubuntu-latest
     env:
       SKIP_DOCKER_MOUNT_TESTS: "0"
