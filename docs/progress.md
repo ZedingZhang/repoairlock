@@ -97,12 +97,14 @@ $ pytest tests/unit -q  # all pass
 ```bash
 $ SKIP_DOCKER_MOUNT_TESTS=0 pytest tests/integration tests/e2e -q -v
 ```
-- **Status (2026-06-11): failed before fix on GitHub Actions `ubuntu-latest`.**
-- Root cause: the generated `docker run --mount` argument used a bare `rw`
-  field (`type=bind,src=<path>,dst=/workspace,rw`). Docker `--mount` expects
-  comma-separated `key=value` fields; bind mounts are writable by default.
-- After removing the bare `rw` field, rerun this workflow to verify the full
-  Docker E2E path on GitHub Actions and on a local Linux Docker daemon.
+- **Status (2026-06-11): 26 passed, 0 failed on GitHub Actions `ubuntu-latest`.**
+- Resolution: two fixes applied:
+  1. Removed bare `rw` from `--mount type=bind` (Docker expects `key=value` only).
+  2. Added `--cap-add DAC_OVERRIDE` after `--cap-drop ALL` to allow root inside
+     the container to write to bind-mounted files owned by host users (e.g.,
+     `runner:runner` uid 1001 on GitHub Actions). All other capabilities remain
+     dropped, preserving defense-in-depth.
+- Full Docker E2E is verified on every `workflow_dispatch` manual trigger.
 
 ```bash
 $ repoairlock --help   # 7 commands listed
