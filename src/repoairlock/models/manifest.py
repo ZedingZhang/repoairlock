@@ -76,6 +76,7 @@ class Manifest(BaseModel):
     created_at: str
     completed_at: str = ""
     status: RunStatus = RunStatus.CREATED
+    report_status: str = ""
     capability_tier: CapabilityTier = CapabilityTier.PROCESS_WRAPPER
     repo: RepoInfo = Field(default_factory=lambda: RepoInfo())
     adapter: AdapterInfo = Field(default_factory=lambda: AdapterInfo())

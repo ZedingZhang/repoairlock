@@ -12,6 +12,7 @@ class RunStatus(StrEnum):
     FAILED = "failed"
     VERIFICATION_FAILED = "verification_failed"
     CLEANUP_FAILED = "cleanup_failed"
+    AGENT_FAILED = "agent_failed"
     INVARIANT_VIOLATION = "invariant_violation"
     TIMED_OUT = "timed_out"
     CANCELLED = "cancelled"

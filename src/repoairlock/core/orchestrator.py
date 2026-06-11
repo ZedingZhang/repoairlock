@@ -223,7 +223,7 @@ class RunOrchestrator:
             elif verifier_exit_code is not None and verifier_exit_code != 0:
                 final_status = RunStatus.VERIFICATION_FAILED
             elif sandbox_result.exit_code != 0:
-                final_status = RunStatus.FAILED
+                final_status = RunStatus.AGENT_FAILED
             else:
                 final_status = RunStatus.COMPLETED
             manifest.status = final_status
@@ -305,16 +305,17 @@ class RunOrchestrator:
                 store.write_text("report.html", html)
             except Exception as report_err:
                 _remove_partial_report_files(store.run_dir)
-                final_status = merge_status(final_status, RunStatus.FAILED)
-                manifest.status = final_status
+                manifest.report_status = f"failed: {report_err}"
                 recorder.record(
-                    type=EventType.RUN_FAILED,
+                    type=EventType.REPORT_GENERATION_FAILED,
                     source="harness.reporting",
-                    payload={"error": f"Report generation failed: {report_err}"},
+                    payload={"error": str(report_err)},
                 )
 
             # Finalize
             manifest.status = final_status
+            if not manifest.report_status:
+                manifest.report_status = str(final_status.value)
             store.finalize_manifest(
                 manifest,
                 include_report=(store.run_dir / "report.json").exists(),
@@ -397,6 +398,7 @@ def merge_status(current: RunStatus, incoming: RunStatus) -> RunStatus:
 def _status_priority(status: RunStatus) -> int:
     priorities = {
         RunStatus.COMPLETED: 0,
+        RunStatus.AGENT_FAILED: 15,
         RunStatus.FAILED: 10,
         RunStatus.POLICY_BLOCKED: 20,
         RunStatus.VERIFICATION_FAILED: 30,
@@ -417,6 +419,8 @@ def _remove_partial_report_files(run_dir: Path) -> None:
 def _final_event_type(status: RunStatus) -> EventType:
     if status == RunStatus.COMPLETED:
         return EventType.RUN_COMPLETED
+    if status == RunStatus.AGENT_FAILED:
+        return EventType.RUN_FAILED
     if status == RunStatus.TIMED_OUT:
         return EventType.RUN_TIMED_OUT
     if status == RunStatus.VERIFICATION_FAILED:
