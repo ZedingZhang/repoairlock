@@ -326,7 +326,12 @@ class RunOrchestrator:
                     source="harness.reporting",
                     payload={"error": str(report_err)},
                 )
-                store.write_manifest(manifest)
+                # Re-finalize so events.jsonl hash stays consistent with
+                # the events that were just recorded.
+                store.finalize_manifest(
+                    manifest,
+                    include_report=False,
+                )
 
         if main_error is not None:
             raise main_error
