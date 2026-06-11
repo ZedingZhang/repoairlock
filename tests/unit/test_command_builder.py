@@ -34,10 +34,14 @@ class TestDefaultArguments:
         idx = args.index("--network")
         assert args[idx + 1] == "none"
 
-    def test_cap_drop_all(self, base_config: SandboxConfig) -> None:
+    def test_cap_drop_all_with_dac_override(self, base_config: SandboxConfig) -> None:
         args = build_docker_run_args(config=base_config)
         idx = args.index("--cap-drop")
         assert args[idx + 1] == "ALL"
+        # DAC_OVERRIDE is retained so bind-mount writes work across host users
+        assert "--cap-add" in args
+        add_idx = args.index("--cap-add")
+        assert args[add_idx + 1] == "DAC_OVERRIDE"
 
     def test_security_opt_no_new_privileges(self, base_config: SandboxConfig) -> None:
         args = build_docker_run_args(config=base_config)
