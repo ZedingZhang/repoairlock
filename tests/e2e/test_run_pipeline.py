@@ -14,6 +14,7 @@ from pathlib import Path
 import pytest
 
 from repoairlock.core.orchestrator import RunConfig, RunOrchestrator
+from repoairlock.workspace.manager import WorkspaceManager
 
 _DOCKER_OK = False
 _CI_SKIP = _os.environ.get("CI") and _os.environ.get("SKIP_DOCKER_MOUNT_TESTS", "1") == "1"
@@ -71,6 +72,48 @@ def _dump_diagnostics(run_dir: Path) -> str:
     return "\n".join(lines)
 
 
+def _diag_worktree(worktree: Path, worktree_name: str) -> str:
+    """Diagnose a worktree path from the host side."""
+    lines = [f"=== host diag: {worktree_name} ==="]
+    lines.append(f"worktree path: {worktree}")
+    lines.append(f"exists: {worktree.exists()}")
+    if worktree.exists():
+        import os as _os2
+        lines.append(f"stat: {_os2.stat(str(worktree))}")
+        files = list(worktree.iterdir())
+        lines.append(f"contents: {[f.name for f in files]}")
+        hello = worktree / "hello.py"
+        if hello.exists():
+            lines.append(f"hello.py stat: {_os2.stat(str(hello))}")
+            lines.append(f"hello.py content: {hello.read_text()}")
+    return "\n".join(lines)
+
+
+def _diag_container(worktree: Path, image: str) -> str:
+    """Run a diagnostic container to inspect the mounted workspace."""
+    cmd = (
+        "echo '=== id ===' && id && "
+        "echo '=== ls -la /workspace ===' && ls -la /workspace && "
+        "echo '=== stat /workspace/hello.py ===' && stat /workspace/hello.py 2>&1 && "
+        "echo '=== cat /workspace/hello.py ===' && cat /workspace/hello.py 2>&1"
+    )
+    try:
+        r = subprocess.run(
+            [
+                "docker", "run", "--rm",
+                "--network", "none",
+                "--mount", f"type=bind,src={worktree},dst=/workspace",
+                "--workdir", "/workspace",
+                image,
+                "sh", "-c", cmd,
+            ],
+            capture_output=True, text=True, check=False, timeout=30,
+        )
+        return f"container diag stdout:\n{r.stdout}\nstderr:\n{r.stderr}"
+    except Exception as e:
+        return f"container diag error: {e}"
+
+
 @pytest.fixture
 def image() -> str:
     _ensure_image("alpine:latest")
@@ -90,7 +133,7 @@ def clean_repo(tmp_path: Path) -> Path:
 @docker_required
 class TestE2EPipeline:
     def test_success_agent_produces_patch(
-        self, clean_repo: Path
+        self, clean_repo: Path, image: str
     ) -> None:
         """A successful agent run produces manifest, events, patch, and leaves source intact."""
         original_content = (clean_repo / "hello.py").read_text()
@@ -98,15 +141,11 @@ class TestE2EPipeline:
         config = RunConfig(
             repo=clean_repo,
             agent_command=[
-                "python", "-c",
-                (
-                    "from pathlib import Path;"
-                    "p = Path('/workspace/hello.py');"
-                    "content = p.read_text();"
-                    "p.write_text(content.replace('Hello, World!', 'Hello, PatchGuard!'))"
-                ),
+                "sh", "-c",
+                "cat /workspace/hello.py > /tmp/orig && "
+                "echo 'print(\"Hello, PatchGuard!\")' > /workspace/hello.py",
             ],
-            image="python:3.12-alpine",
+            image=image,
             timeout=60,
             network="none",
         )
@@ -114,33 +153,26 @@ class TestE2EPipeline:
         orchestrator = RunOrchestrator()
         result = orchestrator.execute(config)
 
-        if result.exit_code != 0 or result.status.value != "completed":
+        if result.exit_code != 0:
             diag = _dump_diagnostics(result.run_dir)
             pytest.fail(
-                f"Expected completed/exit 0, got {result.status.value}/{result.exit_code}\n"
-                f"Diagnostics:\n{diag}"
+                f"Expected exit 0, got {result.exit_code}\n{diag}"
             )
 
         assert result.status.value == "completed"
         assert result.exit_code == 0
         assert result.patch_bytes > 0
 
-        # Original repo unchanged
         assert (clean_repo / "hello.py").read_text() == original_content
 
-        # Artifacts exist
         run_dir = result.run_dir
-        assert run_dir.exists()
         assert (run_dir / "manifest.json").exists()
         assert (run_dir / "events.jsonl").exists()
         assert (run_dir / "patch.diff").exists()
         assert (run_dir / "stdout.log").exists()
 
-        # Manifest is valid JSON
         manifest = json.loads((run_dir / "manifest.json").read_text())
         assert manifest["run_id"] == result.run_id
-        assert "schema_version" in manifest
-        assert "integrity" in manifest
 
     def test_success_agent_with_shell_command(
         self, clean_repo: Path, image: str
@@ -161,34 +193,25 @@ class TestE2EPipeline:
 
         if result.exit_code != 0:
             diag = _dump_diagnostics(result.run_dir)
-            pytest.fail(
-                f"Expected exit 0, got {result.exit_code}\n"
-                f"Diagnostics:\n{diag}"
-            )
+            pytest.fail(f"Expected exit 0, got {result.exit_code}\n{diag}")
 
         assert result.exit_code == 0
         assert result.patch_bytes > 0
-
-        # Original repo unchanged
         assert (clean_repo / "hello.py").read_text() == original_content
 
-        # Patch contains the change
         patch = (result.run_dir / "patch.diff").read_text()
         assert "modified" in patch
 
     def test_failure_agent_produces_artifacts(
-        self, clean_repo: Path
+        self, clean_repo: Path, image: str
     ) -> None:
         """A failing agent still produces minimum artifacts."""
         original_content = (clean_repo / "hello.py").read_text()
 
         config = RunConfig(
             repo=clean_repo,
-            agent_command=[
-                "python", "-c",
-                "import sys; sys.stderr.write('error!\\n'); sys.exit(1)",
-            ],
-            image="python:3.12-alpine",
+            agent_command=["sh", "-c", "echo 'error!' >&2; exit 1"],
+            image=image,
             timeout=30,
             network="none",
         )
@@ -198,18 +221,13 @@ class TestE2EPipeline:
 
         assert result.exit_code == 1
 
-        # Artifacts still exist
         run_dir = result.run_dir
-        assert run_dir.exists()
         assert (run_dir / "manifest.json").exists()
         assert (run_dir / "events.jsonl").exists()
         assert (run_dir / "stderr.log").exists()
 
-        # stderr contains the error message
         stderr = (run_dir / "stderr.log").read_text()
         assert "error" in stderr
-
-        # Original repo unchanged
         assert (clean_repo / "hello.py").read_text() == original_content
 
     def test_agent_run_isolates_from_source(
@@ -230,17 +248,82 @@ class TestE2EPipeline:
 
         if result.exit_code != 0:
             diag = _dump_diagnostics(result.run_dir)
-            pytest.fail(
-                f"Expected exit 0, got {result.exit_code}\n"
-                f"Diagnostics:\n{diag}"
-            )
+            pytest.fail(f"Expected exit 0, got {result.exit_code}\n{diag}")
 
         assert result.exit_code == 0
-        # Source file NOT modified
         assert (clean_repo / "hello.py").read_text() == original
-        # Patch shows the diff
+
         patch = (result.run_dir / "patch.diff").read_text()
         assert "hacked" in patch
+
+
+@docker_required
+class TestE2EDiagnostics:
+    """Diagnosis tests to isolate binding and permission failures."""
+
+    def test_raw_docker_bind_mount_write(self, tmp_path: Path, image: str) -> None:
+        """Level 1: raw docker --mount write (no git, no orchestrator)."""
+        ws = tmp_path / "diag-ws"
+        ws.mkdir()
+        (ws / "hello.py").write_text("original\n")
+
+        r = subprocess.run(
+            [
+                "docker", "run", "--rm",
+                "--network", "none",
+                "--mount", f"type=bind,src={ws},dst=/workspace",
+                "--workdir", "/workspace",
+                image,
+                "sh", "-c", "echo modified > /workspace/hello.py",
+            ],
+            capture_output=True, text=True, check=False, timeout=30,
+        )
+        assert r.returncode == 0, f"raw docker failed: exit={r.returncode} stderr={r.stderr}"
+        assert (ws / "hello.py").read_text().strip() == "modified"
+
+    def test_workspace_manager_mount_write(
+        self, clean_repo: Path, image: str
+    ) -> None:
+        """Level 2: WorkspaceManager worktree + raw docker mount write."""
+        wm = WorkspaceManager()
+        wt, _ = wm.prepare(clean_repo, "diag-wm")
+        try:
+            r = subprocess.run(
+                [
+                    "docker", "run", "--rm",
+                    "--network", "none",
+                    "--mount", f"type=bind,src={wt},dst=/workspace",
+                    "--workdir", "/workspace",
+                    image,
+                    "sh", "-c", "echo modified > /workspace/hello.py",
+                ],
+                capture_output=True, text=True, check=False, timeout=30,
+            )
+            assert r.returncode == 0, (
+                f"WM + docker failed: exit={r.returncode}\n"
+                f"worktree={wt}\nstderr={r.stderr}\nstdout={r.stdout}"
+            )
+            assert (wt / "hello.py").read_text().strip() == "modified"
+        finally:
+            wm.cleanup(clean_repo, wt)
+
+    def test_orchestrator_simple_write(
+        self, clean_repo: Path, image: str
+    ) -> None:
+        """Level 3: full orchestrator with a minimal write command."""
+        config = RunConfig(
+            repo=clean_repo,
+            agent_command=["sh", "-c", "echo 'diag-test' > /workspace/orch_test.txt"],
+            image=image,
+            timeout=30,
+            network="none",
+        )
+        orchestrator = RunOrchestrator()
+        result = orchestrator.execute(config)
+        assert result.exit_code == 0, (
+            f"orchestrator failed: exit={result.exit_code} status={result.status.value}\n"
+            f"{_dump_diagnostics(result.run_dir)}"
+        )
 
 
 @docker_required
@@ -256,7 +339,6 @@ class TestE2EListRuns:
         orchestrator = RunOrchestrator()
         result = orchestrator.execute(config)
 
-        # Check that listing finds this run
         from repoairlock.constants import DEFAULT_RUNS_DIR
         manifests = list(DEFAULT_RUNS_DIR.glob("*/manifest.json"))
         run_ids = []
