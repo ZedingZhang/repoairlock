@@ -104,7 +104,7 @@ $ repoairlock --version # repoairlock v0.1.0-alpha
 
 ### Project Complete
 
-RepoAirlock v0.1.0-alpha is ready for public presentation. The project answers nine
+RepoAirlock v0.1.0 alpha release candidate is ready for public preview. The project answers nine
 core questions through artifacts, tests, and reports:
 
 1. Where did the agent execute? (detached worktree, Docker container)
