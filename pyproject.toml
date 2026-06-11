@@ -3,14 +3,14 @@ requires = ["setuptools>=75", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "patchguard"
+name = "agentfence"
 version = "0.1.0"
 description = "Safety-oriented execution harness for coding agents"
 readme = "README.md"
 requires-python = ">=3.12"
 license = {text = "MIT"}
 authors = [
-    {name = "PatchGuard Authors"}
+    {name = "AgentFence Authors"}
 ]
 dependencies = [
     "typer>=0.15",
@@ -27,7 +27,7 @@ dev = [
 ]
 
 [project.scripts]
-patchguard = "patchguard.cli:app"
+agentfence = "agentfence.cli:app"
 
 [tool.ruff]
 target-version = "py312"

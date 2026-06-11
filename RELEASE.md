@@ -1,8 +1,8 @@
-# PatchGuard v0.1.0 Release Notes
+# AgentFence v0.1.0 Release Notes
 
 ## Overview
 
-PatchGuard v0.1.0 is the first public release of the PatchGuard execution
+AgentFence v0.1.0 is the first public release of the AgentFence execution
 harness for coding agents. It provides Tier 0 (Process Wrapper) capabilities:
 container-based isolation, structured audit trails, policy enforcement for
 Docker configuration, and reproducible artifacts including HTML reports.
@@ -11,7 +11,7 @@ Tier 2 (Enforcement) adapter for Claude Code is included as a preview.
 
 ## What's Included
 
-### Core Pipeline (`patchguard run`)
+### Core Pipeline (`agentfence run`)
 - Detached git worktree isolation — agent never touches the original working tree (INV-001)
 - Docker sandbox with safe defaults: no network, no privileges, resource limits
 - Full event recording: 21 event types written to structured JSONL
@@ -21,10 +21,10 @@ Tier 2 (Enforcement) adapter for Claude Code is included as a preview.
 - HTML report generation with 8 standard sections
 
 ### Inspection & Reproducibility
-- `patchguard inspect <run-id>` — full run summary with INV-001 status
-- `patchguard replay <run-id>` — patch integrity check + replay without agent re-invocation
-- `patchguard compare <a> <b>` — structured comparison across 12 dimensions
-- `patchguard list` — browse past runs
+- `agentfence inspect <run-id>` — full run summary with INV-001 status
+- `agentfence replay <run-id>` — patch integrity check + replay without agent re-invocation
+- `agentfence compare <a> <b>` — structured comparison across 12 dimensions
+- `agentfence list` — browse past runs
 
 ### Safety
 - 12 default policy rules (privileged containers, host network, Docker socket,
@@ -50,24 +50,24 @@ Tier 2 (Enforcement) adapter for Claude Code is included as a preview.
 ```bash
 # Requires Python 3.12+
 git clone <repo-url>
-cd patchguard
+cd agentfence
 python3.12 -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
-patchguard doctor
+agentfence doctor
 ```
 
 ## Quick Start
 
 ```bash
 # Run an agent
-patchguard run --repo ./my-repo --image alpine:latest -- sh -c "echo patched > /workspace/file.txt"
+agentfence run --repo ./my-repo --image alpine:latest -- sh -c "echo patched > /workspace/file.txt"
 
 # Inspect
-patchguard inspect <run-id>
+agentfence inspect <run-id>
 
 # Replay
-patchguard replay <run-id> --repo ./my-repo
+agentfence replay <run-id> --repo ./my-repo
 ```
 
 ## Known Limitations

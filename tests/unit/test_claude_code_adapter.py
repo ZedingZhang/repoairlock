@@ -10,11 +10,11 @@ from pathlib import Path
 
 import pytest
 
-from patchguard.adapters.claude_code import (
+from agentfence.adapters.claude_code import (
     ClaudeCodeAdapter,
     _generate_hook_settings,
 )
-from patchguard.models.enums import CapabilityTier
+from agentfence.models.enums import CapabilityTier
 
 
 class TestClaudeCodeAdapter:
@@ -43,7 +43,7 @@ class TestClaudeCodeAdapter:
         settings_idx = spec.argv.index("--settings")
         settings_path = Path(spec.argv[settings_idx + 1])
         assert settings_path.exists()
-        assert settings_path.parent.name.startswith("patchguard-hooks-run_test")
+        assert settings_path.parent.name.startswith("agentfence-hooks-run_test")
 
         # Clean up temp files
         shutil.rmtree(settings_path.parent, ignore_errors=True)
@@ -122,7 +122,7 @@ class TestHookHandler:
     @pytest.fixture
     def handler_script(self, tmp_path: Path) -> Path:
         """Extract the embedded hook handler script to a temp file."""
-        from patchguard.adapters.claude_code import _HOOK_HANDLER_SCRIPT
+        from agentfence.adapters.claude_code import _HOOK_HANDLER_SCRIPT
         script = tmp_path / "hook_handler.py"
         script.write_text(_HOOK_HANDLER_SCRIPT)
         return script
@@ -141,8 +141,8 @@ class TestHookHandler:
     ) -> subprocess.CompletedProcess:
         env = {
             **os.environ,
-            "PATCHGUARD_EVENTS_PATH": str(events_path),
-            "PATCHGUARD_RUN_ID": run_id,
+            "AGENTFENCE_EVENTS_PATH": str(events_path),
+            "AGENTFENCE_RUN_ID": run_id,
         }
         hook_input = json.dumps({
             "hook_event_name": "PreToolUse",
@@ -237,8 +237,8 @@ class TestHookHandler:
     ) -> None:
         env = {
             **os.environ,
-            "PATCHGUARD_EVENTS_PATH": str(events_path),
-            "PATCHGUARD_RUN_ID": "run_test",
+            "AGENTFENCE_EVENTS_PATH": str(events_path),
+            "AGENTFENCE_RUN_ID": "run_test",
         }
         r = subprocess.run(
             ["python3", str(handler_script)],
@@ -253,7 +253,7 @@ class TestHookHandler:
         self, tmp_path: Path,
     ) -> None:
         """Verify adapter creates config in a temp directory, not in ~/.claude."""
-        from patchguard.adapters.claude_code import ClaudeCodeAdapter
+        from agentfence.adapters.claude_code import ClaudeCodeAdapter
         adapter = ClaudeCodeAdapter()
         spec = adapter.build_launch_spec(
             workspace=tmp_path,

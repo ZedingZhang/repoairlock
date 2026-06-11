@@ -1,4 +1,4 @@
-# PatchGuard Design Document
+# AgentFence Design Document
 
 This file is a symlink / reference to the authoritative design document.
 

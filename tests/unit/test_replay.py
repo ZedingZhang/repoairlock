@@ -6,10 +6,10 @@ from pathlib import Path
 
 import pytest
 
-from patchguard.artifacts.integrity import sha256_file
-from patchguard.artifacts.serializer import write_json_atomic
-from patchguard.exceptions import ConfigurationError
-from patchguard.replay.service import ReplayService
+from agentfence.artifacts.integrity import sha256_file
+from agentfence.artifacts.serializer import write_json_atomic
+from agentfence.exceptions import ConfigurationError
+from agentfence.replay.service import ReplayService
 
 
 @pytest.fixture
@@ -111,14 +111,14 @@ class TestReplayErrors:
 
 class TestParsePatchStats:
     def test_empty_patch(self) -> None:
-        from patchguard.analysis.compare import _parse_patch_stats
+        from agentfence.analysis.compare import _parse_patch_stats
         files, added, deleted = _parse_patch_stats("")
         assert files == 0
         assert added == 0
         assert deleted == 0
 
     def test_single_file_patch(self) -> None:
-        from patchguard.analysis.compare import _parse_patch_stats
+        from agentfence.analysis.compare import _parse_patch_stats
         patch = (
             "diff --git a/hello.py b/hello.py\n"
             "--- a/hello.py\n"
@@ -135,14 +135,14 @@ class TestParsePatchStats:
 
 class TestCompareResult:
     def test_format_empty(self) -> None:
-        from patchguard.analysis.compare import CompareResult
+        from agentfence.analysis.compare import CompareResult
         cr = CompareResult("run_a", "run_b")
         output = cr.format()
         assert "run_a" in output
         assert "run_b" in output
 
     def test_format_with_fields(self) -> None:
-        from patchguard.analysis.compare import CompareResult
+        from agentfence.analysis.compare import CompareResult
         cr = CompareResult("run_a", "run_b")
         cr.add("Status", "completed", "failed")
         cr.add("Exit code", "0", "1")
@@ -151,7 +151,7 @@ class TestCompareResult:
         assert "failed" in output
 
     def test_to_dict(self) -> None:
-        from patchguard.analysis.compare import CompareResult
+        from agentfence.analysis.compare import CompareResult
         cr = CompareResult("short_a", "short_b")
         cr.add("Status", "completed", "failed")
         d = cr.to_dict()

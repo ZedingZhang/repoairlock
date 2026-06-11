@@ -10,10 +10,10 @@ from pathlib import Path
 
 import pytest
 
-from patchguard.exceptions import InvariantViolationError, WorkspaceError
-from patchguard.workspace.fingerprint import capture_fingerprint
-from patchguard.workspace.git_client import GitClient
-from patchguard.workspace.manager import WorkspaceManager
+from agentfence.exceptions import InvariantViolationError, WorkspaceError
+from agentfence.workspace.fingerprint import capture_fingerprint
+from agentfence.workspace.git_client import GitClient
+from agentfence.workspace.manager import WorkspaceManager
 
 # -- helpers ---------------------------------------------------------------
 

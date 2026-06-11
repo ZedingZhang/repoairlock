@@ -5,12 +5,12 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from patchguard.analysis.diff_metrics import _is_sensitive, compute_diff_metrics
-from patchguard.analysis.quality_score import compute_quality_findings
-from patchguard.analysis.trajectory_metrics import (
+from agentfence.analysis.diff_metrics import _is_sensitive, compute_diff_metrics
+from agentfence.analysis.quality_score import compute_quality_findings
+from agentfence.analysis.trajectory_metrics import (
     compute_trajectory_metrics,
 )
-from patchguard.reporting.generator import ReportGenerator
+from agentfence.reporting.generator import ReportGenerator
 
 
 def _write_events(path: Path, lines: list[dict]) -> None:
@@ -245,7 +245,7 @@ class TestReportGenerator:
         assert report["capability_tier"] == "tier_0_process_wrapper"
         assert "capability_visibility_limits" in report
         assert "replay_instructions" in report
-        assert report["replay_instructions"]["command"] == "patchguard replay run_test"
+        assert report["replay_instructions"]["command"] == "agentfence replay run_test"
 
     def test_generate_html(self, tmp_path: Path) -> None:
         run_dir = _setup_run_dir(tmp_path, "run_html")
@@ -256,7 +256,7 @@ class TestReportGenerator:
         assert "run_html" in html
         assert "tier_0_process_wrapper" in html
         assert "Known Visibility Limits" in html
-        assert "patchguard replay run_html" in html
+        assert "agentfence replay run_html" in html
 
     def test_report_for_failed_run(self, tmp_path: Path) -> None:
         run_dir = _setup_run_dir(tmp_path, "run_fail", status="failed")

@@ -1,4 +1,4 @@
-# PatchGuard Invariants
+# AgentFence Invariants
 
 > All invariants must be covered by automated tests.
 
@@ -14,7 +14,7 @@ No execution path may modify the user's original working tree.
 
 ## INV-002 No silent local execution
 
-When the isolation backend is unavailable, `patchguard run` must fail.
+When the isolation backend is unavailable, `agentfence run` must fail.
 Only `--unsafe-local-execution` (explicit opt-in) allows local execution,
 and it must display a prominent warning and mark the artifact.
 

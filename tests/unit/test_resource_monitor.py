@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from patchguard.sandbox.resource_monitor import _parse_size
+from agentfence.sandbox.resource_monitor import _parse_size
 
 
 class TestParseSize:

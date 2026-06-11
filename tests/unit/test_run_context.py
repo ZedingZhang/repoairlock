@@ -5,8 +5,8 @@ from __future__ import annotations
 import time
 from pathlib import Path
 
-from patchguard.core.run_context import RunContext, generate_run_id
-from patchguard.models.enums import RunStatus
+from agentfence.core.run_context import RunContext, generate_run_id
+from agentfence.models.enums import RunStatus
 
 
 class TestGenerateRunId:

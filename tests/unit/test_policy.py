@@ -7,9 +7,9 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from patchguard.exceptions import ConfigurationError
-from patchguard.policy.engine import PolicyEngine
-from patchguard.policy.models import (
+from agentfence.exceptions import ConfigurationError
+from agentfence.policy.engine import PolicyEngine
+from agentfence.policy.models import (
     PolicyDecision,
     PolicyResult,
     PolicyRule,
@@ -17,11 +17,11 @@ from patchguard.policy.models import (
     RiskLevel,
     RuleMatch,
 )
-from patchguard.policy.rules import (
+from agentfence.policy.rules import (
     evaluate_text_input,
 )
-from patchguard.sandbox.base import SandboxConfig
-from patchguard.sandbox.command_builder import validate_sandbox_config
+from agentfence.sandbox.base import SandboxConfig
+from agentfence.sandbox.command_builder import validate_sandbox_config
 
 # -- fixtures --------------------------------------------------------------
 

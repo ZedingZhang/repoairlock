@@ -11,9 +11,9 @@ from pathlib import Path
 
 import pytest
 
-from patchguard.exceptions import EnvironmentError
-from patchguard.sandbox.base import SandboxConfig
-from patchguard.sandbox.docker import DockerBackend
+from agentfence.exceptions import EnvironmentError
+from agentfence.sandbox.base import SandboxConfig
+from agentfence.sandbox.docker import DockerBackend
 
 _DOCKER_AVAILABLE = shutil.which("docker") is not None
 
@@ -148,7 +148,7 @@ class TestDockerRun:
         # Container should be removed after run
         cmd = [
             "docker", "ps", "-a",
-            "--filter", "name=patchguard-itest_cleanup",
+            "--filter", "name=agentfence-itest_cleanup",
             "--format", "{{.ID}}",
         ]
         r = subprocess.run(cmd, capture_output=True, text=True, check=False)

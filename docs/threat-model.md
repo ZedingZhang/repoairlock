@@ -1,4 +1,4 @@
-# PatchGuard Threat Model
+# AgentFence Threat Model
 
 ## Protected Assets
 
@@ -21,8 +21,8 @@
 
 ### Limited Trust
 - Local Git and Docker CLI
-- PatchGuard's own process
-- PatchGuard configuration files
+- AgentFence's own process
+- AgentFence configuration files
 - User-explicitly-provided agent command
 
 ## Risks Explicitly Mitigated (MVP)

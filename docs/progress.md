@@ -1,4 +1,4 @@
-# PatchGuard Implementation Progress
+# AgentFence Implementation Progress
 
 ## All Phases Complete
 
@@ -56,7 +56,7 @@
 | 5 | Docker unavailable → fail (not silent local) | PASSED | `EnvironmentError` raised, `--unsafe-local-execution` required for bypass (Phase 3) |
 | 6 | Default no network | PASSED | `--network none` in build_docker_run_args (Phase 3) |
 | 7 | Default resource limits exist | PASSED | `--cpus 2 --memory 4g --pids-limit 256` (Phase 3) |
-| 8 | Env allowlist injection | PASSED | Only PATH, HOME, PATCHGUARD_* + user-specified (Phase 3) |
+| 8 | Env allowlist injection | PASSED | Only PATH, HOME, AGENTFENCE_* + user-specified (Phase 3) |
 | 9 | Every run → manifest, events, logs, patch, report | PASSED | Orchestrator always writes all artifacts including report (Phase 4, 6) |
 | 10 | Patch replayable | PASSED | ReplayService tested with patch apply to fresh worktree (Phase 5) |
 | 11 | Tampered patch detected | PASSED | SHA-256 integrity check before replay (Phase 5) |
@@ -89,9 +89,9 @@ Adapters:              command (Tier 0), claude_code (Tier 2)
 $ ruff check .       # All checks passed
 $ mypy src            # Success: no issues found in 42 source files
 $ pytest -q           # 222 passed, 10 skipped
-$ patchguard doctor   # 4/7 PASS (Docker not available on this host)
-$ patchguard --help   # 7 commands listed
-$ patchguard --version # patchguard v0.1.0
+$ agentfence doctor   # 4/7 PASS (Docker not available on this host)
+$ agentfence --help   # 7 commands listed
+$ agentfence --version # agentfence v0.1.0
 ```
 
 ### Known Limitations (v0.1.0)
@@ -104,7 +104,7 @@ $ patchguard --version # patchguard v0.1.0
 
 ### Project Complete
 
-PatchGuard v0.1.0 is ready for public presentation. The project answers nine
+AgentFence v0.1.0 is ready for public presentation. The project answers nine
 core questions through artifacts, tests, and reports:
 
 1. Where did the agent execute? (detached worktree, Docker container)

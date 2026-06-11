@@ -7,9 +7,9 @@ import json
 import pytest
 from pydantic import ValidationError
 
-from patchguard.models.enums import CapabilityTier, RunStatus
-from patchguard.models.events import EventEnvelope, EventType
-from patchguard.models.manifest import (
+from agentfence.models.enums import CapabilityTier, RunStatus
+from agentfence.models.events import EventEnvelope, EventType
+from agentfence.models.manifest import (
     MANIFEST_SCHEMA_VERSION,
     IntegrityMap,
     Manifest,

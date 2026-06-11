@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from patchguard.adapters.base import AdapterLaunchSpec
-from patchguard.adapters.command import CommandAdapter
+from agentfence.adapters.base import AdapterLaunchSpec
+from agentfence.adapters.command import CommandAdapter
 
 
 class TestAdapterLaunchSpec:
