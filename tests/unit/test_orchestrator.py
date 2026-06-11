@@ -109,6 +109,7 @@ def test_orchestrator_finalizes_events_report_and_integrity(tmp_path: Path) -> N
     assert manifest["completed_at"]
     assert manifest["integrity"]["events.jsonl"] == sha256_file(result.run_dir / "events.jsonl")
     assert manifest["integrity"]["report.json"] == sha256_file(result.run_dir / "report.json")
+    assert manifest["integrity"]["patch.diff"] == sha256_file(result.run_dir / "patch.diff")
     assert report["run_summary"]["status"] == "completed"
     assert report["run_summary"]["head_sha"]
     assert report["artifact_integrity"]["events_jsonl"] == manifest["integrity"]["events.jsonl"]

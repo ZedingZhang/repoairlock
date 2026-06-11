@@ -84,11 +84,25 @@ Adapters:              command (Tier 0), claude_code hook module (Tier 2)
 
 ### Final Verification
 
+**Normal CI (Python 3.12 + 3.13, ubuntu-latest):**
 ```bash
-$ ruff check .       # All checks passed
-$ mypy src            # Success: no issues found in 42 source files
-$ pytest -q           # 242 passed, 9 skipped
-$ repoairlock doctor   # 4/7 PASS (Docker not available on this host)
+$ ruff check .       # 0 errors
+$ mypy src            # 0 errors (42 source files)
+$ pytest tests/unit -q  # all pass
+```
+- Docker-dependent integration/e2e tests are skipped on normal CI
+  (`SKIP_DOCKER_MOUNT_TESTS=1` by default in CI environment).
+
+**Full Docker Mount E2E (`workflow_dispatch` manual trigger):**
+```bash
+$ SKIP_DOCKER_MOUNT_TESTS=0 pytest tests/integration tests/e2e -q -v
+```
+- Requires a Docker daemon with working `--mount type=bind` support.
+- GitHub Actions `ubuntu-latest` images currently fail the bind-mount path
+  when run from the default check job; a dedicated `full-docker-e2e` workflow
+  is available for manual verification on a compatible runner.
+
+```bash
 $ repoairlock --help   # 7 commands listed
 $ repoairlock --version # repoairlock v0.1.0-alpha
 ```

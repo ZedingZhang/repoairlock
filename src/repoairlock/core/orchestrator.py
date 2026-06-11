@@ -252,7 +252,7 @@ class RunOrchestrator:
                         source="harness.workspace",
                     )
             except Exception as cleanup_err:
-                final_status = RunStatus.CLEANUP_FAILED
+                final_status = merge_status(final_status, RunStatus.CLEANUP_FAILED)
                 manifest.status = final_status
                 recorder.record(
                     type=EventType.CLEANUP_FAILED,
@@ -267,7 +267,7 @@ class RunOrchestrator:
                 if before_fp:
                     workspace_mgr.verify_source_unchanged(before_fp, after_fp)
             except Exception as invariant_err:
-                final_status = RunStatus.INVARIANT_VIOLATION
+                final_status = merge_status(final_status, RunStatus.INVARIANT_VIOLATION)
                 manifest.status = final_status
                 recorder.record(
                     type=EventType.INVARIANT_VIOLATION,
@@ -278,8 +278,8 @@ class RunOrchestrator:
                     },
                 )
 
-            # Record final status before reports and integrity hashes so both
-            # artifacts describe the same completed event stream.
+            # Record terminal event then finalize integrity before report
+            # generation so report and manifest share the same hashes.
             manifest.completed_at = _now_iso()
             manifest.status = final_status
             recorder.record(
@@ -287,22 +287,37 @@ class RunOrchestrator:
                 source="harness.core",
                 payload={"status": str(manifest.status)},
             )
+            recorder.record(
+                type=EventType.RUN_FINALIZED,
+                source="harness.core",
+                payload={"status": str(manifest.status)},
+            )
+
+            # Finalize (compute integrity) after all events are recorded.
+            if not manifest.report_status:
+                manifest.report_status = "generated"
+            recorder.record(
+                type=EventType.REPORT_GENERATION_STARTED,
+                source="harness.reporting",
+            )
+            store.finalize_manifest(
+                manifest,
+                include_report=False,
+            )
 
             # Generate report
             try:
                 from repoairlock.reporting.generator import ReportGenerator
                 gen = ReportGenerator(store.run_dir, ctx.run_id)
-                recorder.record(
-                    type=EventType.REPORT_GENERATION_STARTED,
-                    source="harness.reporting",
-                )
-                store.write_manifest(manifest)
-                manifest.integrity = store.compute_integrity(include_report=False)
-                store.write_manifest(manifest)
                 report_data = gen.generate()
                 html = gen.generate_html(report_data)
                 store.write_json("report.json", report_data)
                 store.write_text("report.html", html)
+                # Re-finalize with report hash included
+                store.finalize_manifest(
+                    manifest,
+                    include_report=True,
+                )
             except Exception as report_err:
                 _remove_partial_report_files(store.run_dir)
                 manifest.report_status = f"failed: {report_err}"
@@ -311,15 +326,7 @@ class RunOrchestrator:
                     source="harness.reporting",
                     payload={"error": str(report_err)},
                 )
-
-            # Finalize
-            manifest.status = final_status
-            if not manifest.report_status:
-                manifest.report_status = str(final_status.value)
-            store.finalize_manifest(
-                manifest,
-                include_report=(store.run_dir / "report.json").exists(),
-            )
+                store.write_manifest(manifest)
 
         if main_error is not None:
             raise main_error
