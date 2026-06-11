@@ -21,7 +21,8 @@ class TestRunStatus:
     def test_all_statuses_defined(self) -> None:
         expected = {
             "created", "preparing", "running", "verifying",
-            "completed", "failed", "timed_out", "cancelled", "policy_blocked",
+            "completed", "failed", "verification_failed", "cleanup_failed",
+            "invariant_violation", "timed_out", "cancelled", "policy_blocked",
         }
         assert set(RunStatus) == expected
 

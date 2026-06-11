@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from typer.testing import CliRunner
 
 from agentfence.cli import app
+from agentfence.core.orchestrator import RunResultSummary
+from agentfence.models.enums import RunStatus
 
 runner = CliRunner()
 
@@ -18,6 +22,7 @@ def test_help() -> None:
     assert "inspect" in result.stdout
     assert "replay" in result.stdout
     assert "compare" in result.stdout
+    assert "unsafe-local-execution" not in result.stdout
 
 
 def test_version() -> None:
@@ -50,6 +55,47 @@ def test_run_requires_repo() -> None:
     """agentfence run without --repo should show usage error."""
     result = runner.invoke(app, ["run"])
     assert result.exit_code == 2  # Typer usage error
+
+
+def test_run_rejects_invalid_network_enum(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    result = runner.invoke(
+        app,
+        ["run", "--repo", str(repo), "--network", "host", "--", "echo", "hello"],
+    )
+    assert result.exit_code == 2
+
+
+def test_run_exits_nonzero_for_cleanup_failed(tmp_path: Path, monkeypatch) -> None:
+    _assert_run_status_exit(
+        tmp_path,
+        monkeypatch,
+        status=RunStatus.CLEANUP_FAILED,
+        expected_exit_code=70,
+    )
+
+
+def test_run_exits_nonzero_for_invariant_violation(
+    tmp_path: Path, monkeypatch
+) -> None:
+    _assert_run_status_exit(
+        tmp_path,
+        monkeypatch,
+        status=RunStatus.INVARIANT_VIOLATION,
+        expected_exit_code=80,
+    )
+
+
+def test_run_exits_nonzero_for_verification_failed(
+    tmp_path: Path, monkeypatch
+) -> None:
+    _assert_run_status_exit(
+        tmp_path,
+        monkeypatch,
+        status=RunStatus.VERIFICATION_FAILED,
+        expected_exit_code=40,
+    )
 
 
 def test_list_works() -> None:
@@ -114,3 +160,33 @@ def test_compare_help() -> None:
     result = runner.invoke(app, ["compare", "--help"])
     assert result.exit_code == 0
     assert "compare" in result.stdout.lower()
+
+
+def _assert_run_status_exit(
+    tmp_path: Path,
+    monkeypatch,
+    *,
+    status: RunStatus,
+    expected_exit_code: int,
+) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    run_dir = tmp_path / "runs" / "run_fake"
+    run_dir.mkdir(parents=True)
+
+    class FakeRunOrchestrator:
+        def execute(self, config):
+            return RunResultSummary(
+                run_id="run_fake",
+                run_dir=run_dir,
+                status=status,
+                exit_code=0,
+                patch_bytes=0,
+                verifier_exit_code=1 if status == RunStatus.VERIFICATION_FAILED else None,
+            )
+
+    import agentfence.core.orchestrator as orchestrator_module
+    monkeypatch.setattr(orchestrator_module, "RunOrchestrator", FakeRunOrchestrator)
+    result = runner.invoke(app, ["run", "--repo", str(repo), "--", "echo", "hello"])
+    assert result.exit_code == expected_exit_code
+    assert status.value in result.stdout

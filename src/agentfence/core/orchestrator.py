@@ -48,7 +48,6 @@ class RunConfig:
     env_allow: list[str] = field(default_factory=list)
     runs_dir: Path | None = None
     keep_worktree: bool = False
-    unsafe_local_execution: bool = False
 
 
 @dataclass
@@ -107,7 +106,6 @@ class RunOrchestrator:
             memory=config.memory,
             pids_limit=config.pids_limit,
             timeout_seconds=config.timeout,
-            unsafe_local_execution=config.unsafe_local_execution,
         )
         manifest.capability_tier = capability_tier
         store.write_manifest(manifest)
@@ -123,6 +121,8 @@ class RunOrchestrator:
         sandbox_result: SandboxRunResult | None = None
         patch_content = ""
         verifier_exit_code: int | None = None
+        final_status = RunStatus.FAILED
+        main_error: BaseException | None = None
 
         try:
             # 5. Prepare workspace
@@ -200,6 +200,8 @@ class RunOrchestrator:
 
             # 8. Verifier (optional)
             if config.verify_command:
+                ctx.set_status(RunStatus.VERIFYING)
+                manifest.status = RunStatus.VERIFYING
                 verifier_exit_code = self._run_verifier(
                     config=config,
                     sandbox_config=sandbox_config,
@@ -210,29 +212,30 @@ class RunOrchestrator:
 
             # 9. Handle exit status
             if sandbox_result.timed_out:
-                manifest.status = RunStatus.TIMED_OUT
+                final_status = RunStatus.TIMED_OUT
+            elif verifier_exit_code is not None and verifier_exit_code != 0:
+                final_status = RunStatus.VERIFICATION_FAILED
             elif sandbox_result.exit_code != 0:
-                manifest.status = RunStatus.FAILED
+                final_status = RunStatus.FAILED
             else:
-                manifest.status = RunStatus.COMPLETED
+                final_status = RunStatus.COMPLETED
+            manifest.status = final_status
 
-            return RunResultSummary(
-                run_id=ctx.run_id,
-                run_dir=store.run_dir,
-                status=manifest.status,
-                exit_code=sandbox_result.exit_code,
-                patch_bytes=len(patch_content),
-                verifier_exit_code=verifier_exit_code,
-            )
-
-        except AgentFenceError:
-            raise
-        except Exception as exc:
+        except AgentFenceError as exc:
+            main_error = exc
+            final_status = RunStatus.FAILED
             record_run_failed(
                 recorder, manifest, error_message=str(exc), phase=str(ctx.status)
             )
-            raise
+        except Exception as exc:
+            main_error = exc
+            final_status = RunStatus.FAILED
+            record_run_failed(
+                recorder, manifest, error_message=str(exc), phase=str(ctx.status)
+            )
         finally:
+            manifest.status = final_status
+
             # 10. Cleanup
             try:
                 if worktree_path and not config.keep_worktree:
@@ -242,6 +245,8 @@ class RunOrchestrator:
                         source="harness.workspace",
                     )
             except Exception as cleanup_err:
+                final_status = RunStatus.CLEANUP_FAILED
+                manifest.status = final_status
                 recorder.record(
                     type=EventType.CLEANUP_FAILED,
                     source="harness.workspace",
@@ -254,23 +259,29 @@ class RunOrchestrator:
                 manifest.repo.source_fingerprint_after = after_fp.summary()
                 if before_fp:
                     workspace_mgr.verify_source_unchanged(before_fp, after_fp)
-            except Exception:
-                manifest.status = RunStatus.FAILED
+            except Exception as invariant_err:
+                final_status = RunStatus.INVARIANT_VIOLATION
+                manifest.status = final_status
                 recorder.record(
-                    type=EventType.RUN_FAILED,
+                    type=EventType.INVARIANT_VIOLATION,
                     source="harness.core",
-                    payload={"error": "INV-001: source workspace modified"},
+                    payload={
+                        "error": "INV-001: source workspace modified",
+                        "detail": str(invariant_err),
+                    },
                 )
 
             # Record final status before reports and integrity hashes so both
             # artifacts describe the same completed event stream.
             manifest.completed_at = _now_iso()
+            manifest.status = final_status
             recorder.record(
                 type=_final_event_type(manifest.status),
                 source="harness.core",
                 payload={"status": str(manifest.status)},
             )
             store.write_manifest(manifest)
+            store.finalize_manifest(manifest)
 
             # Generate report
             try:
@@ -285,6 +296,8 @@ class RunOrchestrator:
                     source="harness.reporting",
                 )
             except Exception as report_err:
+                final_status = RunStatus.FAILED
+                manifest.status = final_status
                 recorder.record(
                     type=EventType.RUN_FAILED,
                     source="harness.reporting",
@@ -293,6 +306,18 @@ class RunOrchestrator:
 
             # Finalize
             store.finalize_manifest(manifest)
+
+        if main_error is not None:
+            raise main_error
+
+        return RunResultSummary(
+            run_id=ctx.run_id,
+            run_dir=store.run_dir,
+            status=manifest.status,
+            exit_code=sandbox_result.exit_code if sandbox_result else -1,
+            patch_bytes=len(patch_content),
+            verifier_exit_code=verifier_exit_code,
+        )
 
     def _run_verifier(
         self,
@@ -333,6 +358,15 @@ class RunOrchestrator:
                 "passed": verify_result.exit_code == 0,
             },
         )
+        if verify_result.exit_code != 0:
+            recorder.record(
+                type=EventType.VERIFICATION_FAILED,
+                source="harness.verifier",
+                payload={
+                    "exit_code": verify_result.exit_code,
+                    "duration_ms": verify_result.duration_ms,
+                },
+            )
         return verify_result.exit_code
 
 
@@ -347,6 +381,12 @@ def _final_event_type(status: RunStatus) -> EventType:
         return EventType.RUN_COMPLETED
     if status == RunStatus.TIMED_OUT:
         return EventType.RUN_TIMED_OUT
+    if status == RunStatus.VERIFICATION_FAILED:
+        return EventType.VERIFICATION_FAILED
+    if status == RunStatus.CLEANUP_FAILED:
+        return EventType.CLEANUP_FAILED
+    if status == RunStatus.INVARIANT_VIOLATION:
+        return EventType.INVARIANT_VIOLATION
     if status == RunStatus.CANCELLED:
         return EventType.RUN_CANCELLED
     return EventType.RUN_FAILED

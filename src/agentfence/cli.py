@@ -7,6 +7,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from enum import StrEnum
 from pathlib import Path
 from typing import Annotated, Any
 
@@ -16,6 +17,7 @@ from agentfence import __version__
 from agentfence.constants import APP_NAME, DEFAULT_RUNS_DIR
 from agentfence.core.orchestrator import RunConfig
 from agentfence.exceptions import AgentFenceError
+from agentfence.models.enums import RunStatus
 
 app = typer.Typer(
     name=APP_NAME,
@@ -23,6 +25,11 @@ app = typer.Typer(
     pretty_exceptions_show_locals=False,
     pretty_exceptions_enable=False,
 )
+
+
+class NetworkMode(StrEnum):
+    NONE = "none"
+    BRIDGE = "bridge"
 
 
 def _version_callback(value: bool) -> None:
@@ -233,6 +240,20 @@ def _check_runs_dir() -> tuple[bool, str]:
         return False, f"cannot write to {DEFAULT_RUNS_DIR}: {e}"
 
 
+def _exit_code_for_status(status: RunStatus) -> int:
+    if status == RunStatus.COMPLETED:
+        return 0
+    if status == RunStatus.TIMED_OUT:
+        return 31
+    if status == RunStatus.VERIFICATION_FAILED:
+        return 40
+    if status == RunStatus.CLEANUP_FAILED:
+        return 70
+    if status == RunStatus.INVARIANT_VIOLATION:
+        return 80
+    return 30
+
+
 # -- run command -----------------------------------------------------------
 
 
@@ -265,8 +286,8 @@ def run(
         int, typer.Option("--pids-limit", help="PID limit")
     ] = 256,
     network: Annotated[
-        str, typer.Option("--network", help="Network mode: none or bridge")
-    ] = "none",
+        NetworkMode, typer.Option("--network", help="Network mode")
+    ] = NetworkMode.NONE,
     env_allow: Annotated[
         list[str] | None, typer.Option("--env-allow", help="Env vars to pass to container")
     ] = None,
@@ -275,12 +296,6 @@ def run(
     ] = None,
     keep_worktree: Annotated[
         bool, typer.Option("--keep-worktree", help="Keep worktree after run (debug)")
-    ] = False,
-    unsafe_local_execution: Annotated[
-        bool, typer.Option(
-            "--unsafe-local-execution",
-            help="Allow execution without Docker (DANGEROUS)",
-        )
     ] = False,
 ) -> None:
     """Run a coding agent inside AgentFence's isolated sandbox.
@@ -309,11 +324,10 @@ def run(
         cpus=cpus,
         memory=memory,
         pids_limit=pids_limit,
-        network=network,
+        network=network.value,
         env_allow=list(env_allow) if env_allow else [],
         runs_dir=runs_dir,
         keep_worktree=keep_worktree,
-        unsafe_local_execution=unsafe_local_execution,
     )
 
     try:
@@ -337,6 +351,8 @@ def run(
         print(f"  Verifier   : {vstatus}")
     print(f"  Run dir    : {result.run_dir}")
     print(f"\nInspect: agentfence inspect {result.run_id}")
+    if result.status != RunStatus.COMPLETED:
+        raise typer.Exit(code=_exit_code_for_status(result.status))
 
 
 # -- list command ----------------------------------------------------------

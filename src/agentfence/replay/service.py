@@ -95,7 +95,7 @@ class ReplayService:
             patch_content = patch_path.read_text()
             if patch_content.strip():
                 result = subprocess.run(
-                    ["git", "apply"],
+                    ["git", "apply", "--binary"],
                     cwd=wt_path,
                     input=patch_content,
                     capture_output=True,
