@@ -205,15 +205,6 @@ class TestQualityFindings:
         )
         assert any("had network access" in f.lower() for f in findings)
 
-    def test_unsafe_local_warning(self) -> None:
-        findings = compute_quality_findings(
-            capability_tier="tier_0_process_wrapper",
-            diff_metrics={},
-            trajectory_metrics={},
-            sandbox_config={"unsafe_local_execution": True},
-        )
-        assert any("unsafe-local-execution" in f.lower() for f in findings)
-
     def test_verifier_passed(self) -> None:
         findings = compute_quality_findings(
             capability_tier="tier_0_process_wrapper",
@@ -251,8 +242,7 @@ def _mk_mf(run_id: str, status: str = "completed") -> dict:
                  "source_fingerprint_before": "",
                  "source_fingerprint_after": ""},
         "adapter": {"name": "command", "version": "0.1.0"},
-        "sandbox": {"image": "img", "network": "none",
-                    "unsafe_local_execution": False},
+        "sandbox": {"image": "img", "network": "none"},
         "artifacts": {},
         "integrity": {"events.jsonl": "", "patch.diff": "",
                       "report.json": ""},

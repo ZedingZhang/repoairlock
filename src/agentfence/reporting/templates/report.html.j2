@@ -68,7 +68,6 @@
   <div class="label">Network Mode</div><div><code>{{ safety_posture.network_mode }}</code></div>
   <div class="label">Read-Only Rootfs</div><div>{{ safety_posture.read_only_rootfs }}</div>
   <div class="label">Privileged</div><div class="{% if safety_posture.privileged %}failed{% else %}passed{% endif %}">{{ safety_posture.privileged }}</div>
-  <div class="label">Unsafe Local Exec</div><div class="{% if safety_posture.unsafe_local_execution %}failed{% else %}passed{% endif %}">{{ safety_posture.unsafe_local_execution }}</div>
   <div class="label">Source Workspace Unchanged</div><div class="{% if safety_posture.source_workspace_unchanged %}passed{% else %}failed{% endif %}">{{ safety_posture.source_workspace_unchanged }}</div>
 </div>
 

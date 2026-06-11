@@ -79,6 +79,51 @@ def _write_run_manifest(
     write_json_atomic(run_dir / "manifest.json", mf)
 
 
+def _make_patch(
+    repo: Path,
+    head_sha: str,
+    files: dict[str, bytes],
+    *,
+    staged: bool = False,
+) -> str:
+    git = GitClient()
+    wm = WorkspaceManager(git=git)
+    wt, _ = wm.prepare(repo, f"make_patch_{head_sha[:8]}", ref=head_sha)
+    try:
+        for rel_path, content in files.items():
+            path = wt / rel_path
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(content)
+            if staged:
+                subprocess.run(["git", "add", rel_path], cwd=wt, capture_output=True, check=True)
+        return wm.export_patch(wt)
+    finally:
+        wm.cleanup(repo, wt)
+
+
+def _store_and_replay(
+    *,
+    service: ReplayService,
+    runs_dir: Path,
+    run_id: str,
+    repo: Path,
+    head_sha: str,
+    patch: str,
+):
+    run_dir = runs_dir / run_id
+    run_dir.mkdir(parents=True)
+    patch_path = run_dir / "patch.diff"
+    patch_path.write_text(patch)
+    _write_run_manifest(
+        runs_dir=runs_dir,
+        run_id=run_id,
+        repo=repo,
+        head_sha=head_sha,
+        patch_hash=sha256_file(patch_path),
+    )
+    return service.replay(run_id)
+
+
 class TestReplayErrors:
     def test_run_not_found(self, service: ReplayService) -> None:
         with pytest.raises(ConfigurationError, match="Run not found"):
@@ -200,6 +245,67 @@ class TestReplaySuccess:
 
         assert result.success
         assert result.head_sha == original_head
+
+    def test_replay_staged_patch(
+        self, service: ReplayService, runs_dir: Path, tmp_path: Path
+    ) -> None:
+        repo = tmp_path / "repo_staged"
+        _init_repo(repo)
+        head = _commit(repo, "hello.txt", "base\n", "base")
+
+        patch = _make_patch(repo, head, {"hello.txt": b"staged\n"}, staged=True)
+        result = _store_and_replay(
+            service=service,
+            runs_dir=runs_dir,
+            run_id="run_staged",
+            repo=repo,
+            head_sha=head,
+            patch=patch,
+        )
+
+        assert result.success
+        assert result.patch_applied
+
+    def test_replay_untracked_new_file(
+        self, service: ReplayService, runs_dir: Path, tmp_path: Path
+    ) -> None:
+        repo = tmp_path / "repo_untracked"
+        _init_repo(repo)
+        head = _commit(repo, "hello.txt", "base\n", "base")
+
+        patch = _make_patch(repo, head, {"new_file.txt": b"new\n"})
+        result = _store_and_replay(
+            service=service,
+            runs_dir=runs_dir,
+            run_id="run_untracked",
+            repo=repo,
+            head_sha=head,
+            patch=patch,
+        )
+
+        assert result.success
+        assert result.patch_applied
+
+    def test_replay_untracked_binary_file(
+        self, service: ReplayService, runs_dir: Path, tmp_path: Path
+    ) -> None:
+        repo = tmp_path / "repo_binary"
+        _init_repo(repo)
+        head = _commit(repo, "hello.txt", "base\n", "base")
+
+        patch = _make_patch(repo, head, {"data.bin": b"\x00\x01binary\n"})
+        assert "GIT binary patch" in patch
+        result = _store_and_replay(
+            service=service,
+            runs_dir=runs_dir,
+            run_id="run_binary",
+            repo=repo,
+            head_sha=head,
+            patch=patch,
+        )
+
+        assert result.success
+        assert result.patch_applied
 
 
 class TestParsePatchStats:

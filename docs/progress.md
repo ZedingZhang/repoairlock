@@ -27,7 +27,7 @@
 **Status:** Complete | **Tests:** 205 passed
 
 ## Phase 8: Claude Code Tier 2 Adapter
-**Status:** Complete | **Tests:** 229 passed, 9 skipped
+**Status:** Complete | **Tests:** 242 passed, 9 skipped
 
 ---
 
@@ -53,7 +53,7 @@
 | 2 | Untracked files not deleted or modified | PASSED | TestUntrackedRepo integration tests (Phase 2) |
 | 3 | Agent runs only in detached worktree | PASSED | WorkspaceManager uses `git worktree add --detach` (Phase 2) |
 | 4 | Default via Docker | PASSED | DockerBackend is default sandbox, `assert_available()` before run (Phase 3) |
-| 5 | Docker unavailable → fail (not silent local) | PASSED | `EnvironmentError` raised, `--unsafe-local-execution` required for bypass (Phase 3) |
+| 5 | Docker unavailable → fail (not silent local) | PASSED | `EnvironmentError` raised; no local execution fallback is exposed (Phase 3) |
 | 6 | Default no network | PASSED | `--network none` in build_docker_run_args (Phase 3) |
 | 7 | Default resource limits exist | PASSED | `--cpus 2 --memory 4g --pids-limit 256` (Phase 3) |
 | 8 | Env allowlist injection | PASSED | Only PATH, HOME, AGENTFENCE_* + user-specified (Phase 3) |
@@ -64,14 +64,14 @@
 | 13 | Failed path cleans up temp resources | PASSED | Cleanup in `finally` block (Phase 4) |
 | 14 | Cleanup failure → manual cleanup command | PASSED | `_warn_manual_cleanup()` prints exact git commands (Phase 2) |
 | 15 | Report shows capability tier + visibility limits | PASSED | ReportGenerator includes tier description + known limits (Phase 6) |
-| 16 | ruff, mypy, pytest, CI all pass | PASSED | 0 ruff errors, 0 mypy errors, 229 tests pass, 9 skipped (Phase 0–9) |
+| 16 | ruff, mypy, pytest, CI all pass | PASSED | 0 ruff errors, 0 mypy errors, 242 tests pass, 9 skipped (Phase 0–9) |
 
 ### Project Statistics
 
 ```
 Source files:          42 Python files
 Lines of code:         ~3,500
-Tests:                 229 passing, 9 skipped (Docker-only)
+Tests:                 242 passing, 9 skipped (Docker-only)
 ruff errors:           0
 mypy errors:           0
 Test coverage:         9 phases across models, core, workspace, sandbox,
@@ -88,7 +88,7 @@ Adapters:              command (Tier 0), claude_code hook module (Tier 2)
 ```bash
 $ ruff check .       # All checks passed
 $ mypy src            # Success: no issues found in 42 source files
-$ pytest -q           # 229 passed, 9 skipped
+$ pytest -q           # 242 passed, 9 skipped
 $ agentfence doctor   # 4/7 PASS (Docker not available on this host)
 $ agentfence --help   # 7 commands listed
 $ agentfence --version # agentfence v0.1.0

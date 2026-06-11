@@ -41,7 +41,6 @@ class SandboxInfo(BaseModel):
     memory: str = "4g"
     pids_limit: int = 256
     timeout_seconds: int = 1800
-    unsafe_local_execution: bool = False
 
 
 class ArtifactRefs(BaseModel):

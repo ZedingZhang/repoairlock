@@ -134,3 +134,33 @@ class TestGitClientOnRepo:
 
         git.worktree_remove(repo, wt_path, force=True)
         git.worktree_prune(repo)
+
+    def test_diff_worktree_includes_staged_change(self, repo: Path) -> None:
+        import subprocess
+
+        git = GitClient()
+        head = git.head_sha(repo)
+        wt_path = repo.parent / "test-worktree-staged"
+
+        git.worktree_add_detach(repo, wt_path, head)
+        (wt_path / "hello.py").write_text("print('staged')")
+        subprocess.run(["git", "add", "hello.py"], cwd=wt_path, capture_output=True, check=True)
+        diff = git.diff_worktree(wt_path)
+        assert "staged" in diff
+
+        git.worktree_remove(repo, wt_path, force=True)
+        git.worktree_prune(repo)
+
+    def test_diff_worktree_includes_untracked_binary_file(self, repo: Path) -> None:
+        git = GitClient()
+        head = git.head_sha(repo)
+        wt_path = repo.parent / "test-worktree-binary"
+
+        git.worktree_add_detach(repo, wt_path, head)
+        (wt_path / "data.bin").write_bytes(b"\x00\x01\x02binary")
+        diff = git.diff_worktree(wt_path)
+        assert "GIT binary patch" in diff
+        assert "diff --git a/data.bin b/data.bin" in diff
+
+        git.worktree_remove(repo, wt_path, force=True)
+        git.worktree_prune(repo)

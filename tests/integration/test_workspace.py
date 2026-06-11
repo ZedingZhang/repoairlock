@@ -224,6 +224,17 @@ class TestInvariantEnforcement:
         with pytest.raises(InvariantViolationError):
             before.assert_unchanged(after)
 
+    def test_untracked_content_mutation_detected(
+        self, clean_repo: Path, git: GitClient
+    ) -> None:
+        """Changing an existing untracked file's contents changes the fingerprint."""
+        (clean_repo / "scratch.log").write_bytes(b"before\x00content")
+        before = capture_fingerprint(clean_repo, git)
+        (clean_repo / "scratch.log").write_bytes(b"after\x00content")
+        after = capture_fingerprint(clean_repo, git)
+        with pytest.raises(InvariantViolationError, match="Untracked file contents"):
+            before.assert_unchanged(after)
+
     def test_worktree_lifecycle_many_times(
         self, clean_repo: Path, git: GitClient, wm: WorkspaceManager
     ) -> None:

@@ -45,7 +45,6 @@ class ReportGenerator:
 
         # Safety posture
         safety = {
-            "unsafe_local_execution": sandbox.get("unsafe_local_execution", False),
             "network_mode": sandbox.get("network", "none"),
             "read_only_rootfs": sandbox.get("read_only_rootfs", True),
             "privileged": False,  # never allowed

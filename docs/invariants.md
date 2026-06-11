@@ -15,12 +15,10 @@ No execution path may modify the user's original working tree.
 ## INV-002 No silent local execution
 
 When the isolation backend is unavailable, `agentfence run` must fail.
-Only `--unsafe-local-execution` (explicit opt-in) allows local execution,
-and it must display a prominent warning and mark the artifact.
 
 **Test requirements:**
 - Docker unavailable → run fails with clear error
-- `--unsafe-local-execution` → warning displayed, artifact marked
+- No local execution fallback is exposed by the CLI
 
 ## INV-003 Every run has a unique identity
 

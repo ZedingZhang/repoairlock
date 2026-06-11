@@ -66,6 +66,24 @@ class TestWorkspaceFingerprint:
         with pytest.raises(InvariantViolationError, match="Untracked files"):
             a.assert_unchanged(b)
 
+    def test_untracked_content_change_detected(self) -> None:
+        a = WorkspaceFingerprint(
+            head_sha="abc123",
+            status_hash="s1",
+            diff_hash="d1",
+            untracked_files=("a.txt",),
+            untracked_content_hash="content-a",
+        )
+        b = WorkspaceFingerprint(
+            head_sha="abc123",
+            status_hash="s1",
+            diff_hash="d1",
+            untracked_files=("a.txt",),
+            untracked_content_hash="content-b",
+        )
+        with pytest.raises(InvariantViolationError, match="Untracked file contents"):
+            a.assert_unchanged(b)
+
     def test_summary_is_stable(self) -> None:
         a = WorkspaceFingerprint(
             head_sha="abc", status_hash="s", diff_hash="d"

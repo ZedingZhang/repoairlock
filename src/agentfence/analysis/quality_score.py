@@ -36,13 +36,6 @@ def compute_quality_findings(
     else:
         findings.append(f"Network mode: {network} — agent had network access.")
 
-    unsafe = sandbox_config.get("unsafe_local_execution", False)
-    if unsafe:
-        findings.append(
-            "WARNING: --unsafe-local-execution was enabled. "
-            "Agent ran WITHOUT container isolation."
-        )
-
     # Patch findings
     files = diff_metrics.get("files_changed", 0)
     if isinstance(files, int) and files == 0:
