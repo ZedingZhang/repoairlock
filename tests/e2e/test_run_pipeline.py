@@ -6,6 +6,7 @@ These tests require Docker daemon to be available.
 from __future__ import annotations
 
 import json
+import os as _os
 import shutil
 import subprocess
 from pathlib import Path
@@ -14,7 +15,6 @@ import pytest
 
 from repoairlock.core.orchestrator import RunConfig, RunOrchestrator
 
-import os as _os
 _DOCKER_OK = False
 _CI_SKIP = _os.environ.get("CI") and _os.environ.get("SKIP_DOCKER_MOUNT_TESTS", "1") == "1"
 if not _CI_SKIP and shutil.which("docker"):
