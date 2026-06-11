@@ -163,7 +163,7 @@ def test_verifier_skipped_when_agent_exits_nonzero(tmp_path: Path) -> None:
     )
 
     events = _read_event_types(result.run_dir)
-    assert result.status == RunStatus.FAILED
+    assert result.status == RunStatus.AGENT_FAILED
     assert result.verifier_exit_code is None
     assert backend.verifier_runs == 0
     assert "VERIFICATION_STARTED" not in events
@@ -273,8 +273,9 @@ def test_report_write_failure_removes_partial_report_files(
     )
 
     manifest = json.loads((result.run_dir / "manifest.json").read_text())
-    assert result.status == RunStatus.FAILED
-    assert manifest["status"] == "failed"
+    assert result.status == RunStatus.COMPLETED
+    assert manifest["status"] == "completed"
+    assert manifest["report_status"] == "failed: forced report html write failure"
     assert not (result.run_dir / "report.json").exists()
     assert not (result.run_dir / "report.html").exists()
     assert manifest["integrity"]["report.json"] == ""
