@@ -1,0 +1,12 @@
+from pathlib import Path
+
+APP_NAME = "patchguard"
+VERSION = "0.1.0"
+
+DEFAULT_RUNS_DIR = Path.home() / ".patchguard" / "runs"
+DEFAULT_TIMEOUT_SECONDS = 1800
+DEFAULT_CPUS = 2.0
+DEFAULT_MEMORY = "4g"
+DEFAULT_PIDS_LIMIT = 256
+DEFAULT_NETWORK = "none"
+DEFAULT_RESOURCE_SAMPLE_INTERVAL_SECONDS = 2
