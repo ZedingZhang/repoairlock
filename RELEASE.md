@@ -1,8 +1,8 @@
-# RepoAirlock v0.1.0-alpha Release Notes
+# RepoAirlock v0.1.0 Alpha Release Candidate
 
 ## Overview
 
-RepoAirlock v0.1.0-alpha is the first public release of the RepoAirlock execution
+RepoAirlock v0.1.0 alpha release candidate is the first public preview of the RepoAirlock execution
 harness for coding agents. It provides Tier 0 (Process Wrapper) capabilities:
 container-based isolation, structured audit trails, policy enforcement for
 Docker configuration, and reproducible artifacts including HTML reports.

@@ -32,7 +32,7 @@ user's original working tree.
 | 1 | Structured Events | Import agent tool-call traces for process quality metrics |
 | 2 | Enforcement (preview only) | Pre-execution policy checks on individual tool calls (Bash/Edit/Write) via Claude Code hook adapter |
 
-**Current status:** v0.1.0-alpha candidate. Tier 0 stabilization in progress.
+**Current status:** v0.1.0 alpha release candidate. Tier 0 stabilization in progress.
 Claude Code Tier 2 hook adapter module is preview only; the v0.1 CLI `run` path
 uses the command adapter.
 
@@ -40,7 +40,7 @@ uses the command adapter.
 
 ```bash
 # 1. Install
-git clone <repo-url> && cd repoairlock
+git clone https://github.com/ZedingZhang/repoairlock.git && cd repoairlock
 python3.12 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 
