@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from patchguard.exceptions import InvariantViolationError
-from patchguard.workspace.fingerprint import WorkspaceFingerprint
+from agentfence.exceptions import InvariantViolationError
+from agentfence.workspace.fingerprint import WorkspaceFingerprint
 
 
 class TestWorkspaceFingerprint:

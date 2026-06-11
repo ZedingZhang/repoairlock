@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# PatchGuard Demo Script
+# AgentFence Demo Script
 # Demonstrates the full Tier 0 pipeline: isolation, artifacts, replay.
 # Requires: Python 3.12+, Docker, git
 
@@ -14,7 +14,7 @@ info() { echo -e "${GREEN}[+]${NC} $*"; }
 warn() { echo -e "${YELLOW}[!]${NC} $*"; }
 step() { echo -e "\n${YELLOW}=== $* ===${NC}"; }
 
-step "PatchGuard Demo"
+step "AgentFence Demo"
 info "Verifying environment..."
 
 # Check prerequisites
@@ -36,14 +36,14 @@ fi
 
 # Run doctor
 step "1. Doctor Check"
-patchguard doctor
+agentfence doctor
 
 # Initialize demo repo
-DEMO_REPO=$(mktemp -d /tmp/patchguard-demo-XXXX)
+DEMO_REPO=$(mktemp -d /tmp/agentfence-demo-XXXX)
 info "Creating demo repo at $DEMO_REPO"
 cd "$DEMO_REPO"
 git init -b main
-git config user.email "demo@patchguard.test"
+git config user.email "demo@agentfence.test"
 git config user.name "Demo"
 cat > hello.py << 'PYEOF'
 def greet(name: str = "World") -> str:
@@ -56,11 +56,11 @@ git add hello.py && git commit -m "initial"
 
 # Run 1: Agent modifies hello.py
 step "2. Run Agent (modify hello.py)"
-patchguard run \
+agentfence run \
   --repo "$DEMO_REPO" \
   --image alpine:latest \
   --timeout 30 \
-  -- sh -c "echo 'print(\"Hello, PatchGuard!\")' > /workspace/hello.py"
+  -- sh -c "echo 'print(\"Hello, AgentFence!\")' > /workspace/hello.py"
 
 # Check source unchanged (INV-001)
 step "3. Verify INV-001 (source workspace unchanged)"
@@ -74,30 +74,30 @@ fi
 
 # List runs
 step "4. List Runs"
-RUN_ID=$(patchguard list --limit 1 2>/dev/null | tail -1 | awk '{print $1}')
+RUN_ID=$(agentfence list --limit 1 2>/dev/null | tail -1 | awk '{print $1}')
 info "Latest run: $RUN_ID"
 
 # Inspect
 step "5. Inspect Run"
-patchguard inspect "$RUN_ID"
+agentfence inspect "$RUN_ID"
 
 # Replay
 step "6. Replay Patch (no agent re-invocation)"
-patchguard replay "$RUN_ID" --repo "$DEMO_REPO"
+agentfence replay "$RUN_ID" --repo "$DEMO_REPO"
 
 # Policy Demo
 step "7. Policy Engine Demo"
 info "Attempting to run destructive command in sandbox..."
 info "(Policy engine detects and logs the risk — Tier 0 logs but Tier 2 would block)"
-patchguard run \
+agentfence run \
   --repo "$DEMO_REPO" \
   --image alpine:latest \
   --timeout 30 \
   -- sh -c "echo 'policy test: git reset --hard would be blocked at Tier 2'" || true
 
 # Check HTML report
-LAST_RUN=$(patchguard list --limit 1 2>/dev/null | tail -1 | awk '{print $1}')
-REPORT="$HOME/.patchguard/runs/$LAST_RUN/report.html"
+LAST_RUN=$(agentfence list --limit 1 2>/dev/null | tail -1 | awk '{print $1}')
+REPORT="$HOME/.agentfence/runs/$LAST_RUN/report.html"
 if [ -f "$REPORT" ]; then
     step "8. HTML Report Available"
     info "Report: $REPORT"
@@ -109,4 +109,4 @@ rm -rf "$DEMO_REPO"
 info "Demo repo removed: $DEMO_REPO"
 
 echo ""
-info "Demo complete. Run artifacts preserved in ~/.patchguard/runs/"
+info "Demo complete. Run artifacts preserved in ~/.agentfence/runs/"

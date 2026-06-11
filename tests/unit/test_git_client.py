@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from patchguard.exceptions import WorkspaceError
-from patchguard.workspace.git_client import GitClient
+from agentfence.exceptions import WorkspaceError
+from agentfence.workspace.git_client import GitClient
 
 
 class TestGitClientErrors:

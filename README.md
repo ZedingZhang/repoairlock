@@ -1,4 +1,4 @@
-# PatchGuard
+# AgentFence
 
 Safety-oriented execution harness for coding agents.
 
@@ -14,12 +14,12 @@ policy enforcement, it is difficult to answer basic questions:
 - Can we replay its changes?
 - Was the original workspace preserved?
 
-PatchGuard answers these questions through isolation, structured audit trails,
+AgentFence answers these questions through isolation, structured audit trails,
 and reproducible artifacts.
 
-## What PatchGuard Does
+## What AgentFence Does
 
-PatchGuard runs coding agents inside isolated Docker containers with git
+AgentFence runs coding agents inside isolated Docker containers with git
 worktree isolation, records structured execution traces, enforces safety
 policies, and exports reproducible artifacts — all without modifying the
 user's original working tree.
@@ -38,31 +38,31 @@ user's original working tree.
 
 ```bash
 # 1. Install
-git clone <repo-url> && cd patchguard
+git clone <repo-url> && cd agentfence
 python3.12 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 
 # 2. Check your environment
-patchguard doctor
+agentfence doctor
 
 # 3. Run an agent in the sandbox
-patchguard run \
+agentfence run \
   --repo examples/demo-repo \
   --image alpine:latest \
-  -- sh -c "echo 'print(\"Hello, PatchGuard!\")' > /workspace/hello.py"
+  -- sh -c "echo 'print(\"Hello, AgentFence!\")' > /workspace/hello.py"
 
 # 4. Inspect the results
-patchguard list
-patchguard inspect <run-id>
+agentfence list
+agentfence inspect <run-id>
 
 # 5. Replay the patch (no agent re-invocation)
-patchguard replay <run-id> --repo examples/demo-repo
+agentfence replay <run-id> --repo examples/demo-repo
 
 # 6. Compare two runs
-patchguard compare <run-a> <run-b>
+agentfence compare <run-a> <run-b>
 
 # 7. View the HTML report
-open ~/.patchguard/runs/<run-id>/report.html
+open ~/.agentfence/runs/<run-id>/report.html
 ```
 
 ## Safety Guarantees
@@ -77,7 +77,7 @@ open ~/.patchguard/runs/<run-id>/report.html
 
 ## Explicit Non-Guarantees
 
-PatchGuard **does not** and **cannot** guarantee:
+AgentFence **does not** and **cannot** guarantee:
 
 - Prevention of container escape (this is a property of the Docker runtime)
 - Observability of all agent internal actions at Tier 0
@@ -85,14 +85,14 @@ PatchGuard **does not** and **cannot** guarantee:
 - Absolute isolation (Docker is a process-level boundary, not a hardware boundary)
 - Network egress filtering beyond on/off at Tier 0
 
-PatchGuard is a **safety harness**, not a security sandbox. When you explicitly
+AgentFence is a **safety harness**, not a security sandbox. When you explicitly
 enable network access (`--network bridge`), the agent can make outbound connections.
 
 ## Architecture
 
 ```
                         ┌────────────────────────────┐
-                        │        patchguard CLI       │
+                        │        agentfence CLI       │
                         │  run / inspect / replay /   │
                         │  compare / list / doctor    │
                         └──────────────┬─────────────┘
@@ -130,7 +130,7 @@ enable network access (`--network bridge`), the agent can make outbound connecti
 
 ## Example Report
 
-Run `patchguard run --repo examples/demo-repo --image alpine -- sh -c "..."` to generate an HTML report with these sections:
+Run `agentfence run --repo examples/demo-repo --image alpine -- sh -c "..."` to generate an HTML report with these sections:
 
 1. **Run Summary** — status, wall time, exit code, HEAD SHA
 2. **Safety Posture** — network mode, privileged status, env allowlist, INV-001
@@ -192,7 +192,7 @@ pytest -q tests/e2e          # e2e tests (requires Docker)
 
 ## Attribution
 
-PatchGuard is a safety harness for coding agents. It does **not** perform code
+AgentFence is a safety harness for coding agents. It does **not** perform code
 generation, LLM inference, or autonomous repair. It does **not** guarantee
 "complete security" or "absolute isolation." It provides a structured,
 auditable, and reproducible execution environment so that agent actions

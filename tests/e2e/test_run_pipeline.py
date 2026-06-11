@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from patchguard.core.orchestrator import RunConfig, RunOrchestrator
+from agentfence.core.orchestrator import RunConfig, RunOrchestrator
 
 _DOCKER_OK = False
 if shutil.which("docker"):
@@ -223,7 +223,7 @@ class TestE2EListRuns:
         result = orchestrator.execute(config)
 
         # Check that listing finds this run
-        from patchguard.constants import DEFAULT_RUNS_DIR
+        from agentfence.constants import DEFAULT_RUNS_DIR
         manifests = list(DEFAULT_RUNS_DIR.glob("*/manifest.json"))
         run_ids = []
         for mf in manifests:

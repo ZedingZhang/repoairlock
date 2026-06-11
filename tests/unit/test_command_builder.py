@@ -6,9 +6,9 @@ from pathlib import Path
 
 import pytest
 
-from patchguard.exceptions import ConfigurationError
-from patchguard.sandbox.base import SandboxConfig
-from patchguard.sandbox.command_builder import (
+from agentfence.exceptions import ConfigurationError
+from agentfence.sandbox.base import SandboxConfig
+from agentfence.sandbox.command_builder import (
     build_docker_run_args,
     validate_sandbox_config,
 )
@@ -84,8 +84,8 @@ class TestEnvironmentVariables:
         env_values = [args[i + 1] for i in env_indices]
         assert "PATH" in env_values
         assert "HOME=/home/agent" in env_values
-        assert any("PATCHGUARD_RUN_ID=" in v for v in env_values)
-        assert "PATCHGUARD_WORKSPACE=/workspace" in env_values
+        assert any("AGENTFENCE_RUN_ID=" in v for v in env_values)
+        assert "AGENTFENCE_WORKSPACE=/workspace" in env_values
 
     def test_env_allow_passes_variable_names(self, base_config: SandboxConfig) -> None:
         config = SandboxConfig(
@@ -102,7 +102,7 @@ class TestEnvironmentVariables:
         args = build_docker_run_args(config=base_config)
         env_indices = [i for i, a in enumerate(args) if a == "--env"]
         env_values = [args[i + 1] for i in env_indices]
-        assert "PATCHGUARD_RUN_ID=run_test123" in env_values
+        assert "AGENTFENCE_RUN_ID=run_test123" in env_values
 
 
 class TestForbiddenOptions:
