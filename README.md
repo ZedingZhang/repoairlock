@@ -2,6 +2,8 @@
 
 Safety-oriented execution harness for coding agents.
 
+English | [中文](README.zh-CN.md)
+
 ## Problem
 
 Coding agents modify code autonomously. Without isolation, recording, and
