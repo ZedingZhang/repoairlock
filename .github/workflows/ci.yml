@@ -34,8 +34,8 @@ jobs:
       - name: Mypy
         run: mypy src
 
-      - name: Pytest (unit + integration)
-        run: pytest tests/unit tests/integration -q
+      - name: Pytest (unit)
+        run: pytest tests/unit -q
 
   e2e:
     runs-on: ubuntu-latest
@@ -56,5 +56,5 @@ jobs:
       - name: Docker info
         run: docker info
 
-      - name: Pytest (e2e)
-        run: pytest tests/e2e -q
+      - name: Pytest (integration + e2e)
+        run: pytest tests/integration tests/e2e -q
