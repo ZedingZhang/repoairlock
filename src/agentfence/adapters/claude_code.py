@@ -8,6 +8,8 @@ before execution. Does NOT modify the user's global Claude Code settings.
 from __future__ import annotations
 
 import json
+import shlex
+import sys
 import tempfile
 from collections.abc import Sequence
 from pathlib import Path
@@ -78,6 +80,7 @@ class ClaudeCodeAdapter(AgentAdapter):
 
 def _generate_hook_settings(handler_path: Path) -> dict[str, object]:
     """Generate Claude Code hook settings for PreToolUse and PostToolUse."""
+    hook_command = f"{shlex.quote(sys.executable)} {shlex.quote(str(handler_path))}"
     return {
         "hooks": {
             "PreToolUse": [
@@ -85,21 +88,21 @@ def _generate_hook_settings(handler_path: Path) -> dict[str, object]:
                     "matcher": "Bash",
                     "hooks": [{
                         "type": "command",
-                        "command": f"python3 {handler_path}",
+                        "command": hook_command,
                     }],
                 },
                 {
                     "matcher": "Edit",
                     "hooks": [{
                         "type": "command",
-                        "command": f"python3 {handler_path}",
+                        "command": hook_command,
                     }],
                 },
                 {
                     "matcher": "Write",
                     "hooks": [{
                         "type": "command",
-                        "command": f"python3 {handler_path}",
+                        "command": hook_command,
                     }],
                 },
             ],
@@ -108,7 +111,7 @@ def _generate_hook_settings(handler_path: Path) -> dict[str, object]:
                     "matcher": "",
                     "hooks": [{
                         "type": "command",
-                        "command": f"python3 {handler_path}",
+                        "command": hook_command,
                     }],
                 },
             ],
@@ -186,8 +189,11 @@ def _handle_pre_tool_use(tool_name, tool_input, run_id, events_path):
         results = engine.evaluate_command(eval_text)
         deny_reasons = engine.deny_reasons(results)
         findings = engine.findings(results)
-    except Exception:
-        deny_reasons = []
+    except Exception as exc:
+        deny_reasons = [
+            "[CRITICAL] Policy engine unavailable; refusing tool execution "
+            f"({type(exc).__name__})"
+        ]
         findings = []
 
     # Record TOOL_REQUESTED event

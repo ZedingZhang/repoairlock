@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 from agentfence.artifacts.store import ArtifactStore
@@ -134,6 +134,7 @@ class RunOrchestrator:
                 repo_toplevel, ctx.run_id
             )
             manifest.repo.head_sha = before_fp.head_sha
+            manifest.repo.dirty_before = self._git.is_dirty(repo_toplevel)
             manifest.repo.source_fingerprint_before = before_fp.summary()
             recorder.record(
                 type=EventType.WORKTREE_CREATED,
@@ -177,6 +178,12 @@ class RunOrchestrator:
                     "timed_out": sandbox_result.timed_out,
                 },
             )
+            for sample in sandbox_result.resource_samples:
+                recorder.record(
+                    type=EventType.RESOURCE_SAMPLE,
+                    source="sandbox.docker",
+                    payload=asdict(sample),
+                )
 
             # Write stdout/stderr
             store.write_text("stdout.log", sandbox_result.stdout)
@@ -245,15 +252,25 @@ class RunOrchestrator:
             try:
                 after_fp = capture_fingerprint(repo_toplevel, self._git)
                 manifest.repo.source_fingerprint_after = after_fp.summary()
-                manifest.repo.dirty_before = self._git.is_dirty(repo_toplevel)
                 if before_fp:
                     workspace_mgr.verify_source_unchanged(before_fp, after_fp)
             except Exception:
+                manifest.status = RunStatus.FAILED
                 recorder.record(
                     type=EventType.RUN_FAILED,
                     source="harness.core",
                     payload={"error": "INV-001: source workspace modified"},
                 )
+
+            # Record final status before reports and integrity hashes so both
+            # artifacts describe the same completed event stream.
+            manifest.completed_at = _now_iso()
+            recorder.record(
+                type=_final_event_type(manifest.status),
+                source="harness.core",
+                payload={"status": str(manifest.status)},
+            )
+            store.write_manifest(manifest)
 
             # Generate report
             try:
@@ -275,17 +292,7 @@ class RunOrchestrator:
                 )
 
             # Finalize
-            manifest.completed_at = _now_iso()
             store.finalize_manifest(manifest)
-            recorder.record(
-                type=(
-                    EventType.RUN_COMPLETED
-                    if manifest.status == RunStatus.COMPLETED
-                    else EventType.RUN_FAILED
-                ),
-                source="harness.core",
-                payload={"status": str(manifest.status)},
-            )
 
     def _run_verifier(
         self,
@@ -333,3 +340,13 @@ def _now_iso() -> str:
     from datetime import UTC, datetime
     now = datetime.now(UTC)
     return now.strftime("%Y-%m-%dT%H:%M:%S.") + f"{now.microsecond // 1000:03d}Z"
+
+
+def _final_event_type(status: RunStatus) -> EventType:
+    if status == RunStatus.COMPLETED:
+        return EventType.RUN_COMPLETED
+    if status == RunStatus.TIMED_OUT:
+        return EventType.RUN_TIMED_OUT
+    if status == RunStatus.CANCELLED:
+        return EventType.RUN_CANCELLED
+    return EventType.RUN_FAILED

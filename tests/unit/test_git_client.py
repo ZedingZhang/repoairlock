@@ -119,3 +119,18 @@ class TestGitClientOnRepo:
 
         git.worktree_remove(repo, wt_path, force=True)
         git.worktree_prune(repo)
+
+    def test_diff_worktree_includes_untracked_file(self, repo: Path) -> None:
+        git = GitClient()
+        head = git.head_sha(repo)
+        wt_path = repo.parent / "test-worktree-untracked"
+
+        git.worktree_add_detach(repo, wt_path, head)
+        (wt_path / "new_file.txt").write_text("brand new\n")
+        diff = git.diff_worktree(wt_path)
+        assert "new file mode" in diff
+        assert "+++ b/new_file.txt" in diff
+        assert "+brand new" in diff
+
+        git.worktree_remove(repo, wt_path, force=True)
+        git.worktree_prune(repo)

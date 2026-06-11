@@ -45,6 +45,8 @@ def build_docker_run_args(
     The returned list is suitable for passing directly to subprocess.
     It does NOT include the `docker` binary name itself.
     """
+    validate_sandbox_config(config)
+
     name = container_name or f"agentfence-{config.run_id}"
 
     args: list[str] = [

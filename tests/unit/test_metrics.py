@@ -144,6 +144,38 @@ class TestTrajectoryMetrics:
         assert m["verifier_exit_code"] == 0
         assert m["verifier_passed"] is True
 
+    def test_resource_samples_from_events(self, tmp_path: Path) -> None:
+        events = tmp_path / "events.jsonl"
+        sample_a = {
+            "type": "RESOURCE_SAMPLE",
+            "payload": {
+                "cpu_percent": 10.0,
+                "memory_bytes": 100,
+                "network_rx_bytes": 5,
+                "network_tx_bytes": 7,
+                "pids_current": 2,
+            },
+        }
+        sample_b = {
+            "type": "RESOURCE_SAMPLE",
+            "payload": {
+                "cpu_percent": 30.0,
+                "memory_bytes": 250,
+                "network_rx_bytes": 11,
+                "network_tx_bytes": 13,
+                "pids_current": 4,
+            },
+        }
+        _write_events(events, [E0, sample_a, sample_b, COMP])
+        m = compute_trajectory_metrics(events)
+        resources = m["resource_summary"]
+        assert resources["sample_count"] == 2
+        assert resources["peak_memory_bytes"] == 250
+        assert resources["avg_cpu_percent"] == 20.0
+        assert resources["peak_pids"] == 4
+        assert resources["network_rx_bytes"] == 16
+        assert resources["network_tx_bytes"] == 20
+
 
 class TestQualityFindings:
     def test_tier0_notice(self) -> None:

@@ -60,8 +60,20 @@ class GitClient:
         return sorted(p for p in out.rstrip("\0").split("\0") if p)
 
     def diff_worktree(self, worktree: Path) -> str:
-        """Return `git diff` for all changes in the worktree."""
-        return self._run(worktree, ["diff"]).stdout
+        """Return a patch for tracked and untracked worktree changes."""
+        tracked = self._run(worktree, ["diff", "HEAD", "--binary"]).stdout
+        untracked_patches: list[str] = []
+        for rel_path in self.untracked_files(worktree):
+            result = self._run_allow_returncodes(
+                worktree,
+                ["diff", "--no-index", "--binary", "--", "/dev/null", rel_path],
+                allowed_returncodes={0, 1},
+            )
+            if result.stdout.strip():
+                untracked_patches.append(result.stdout)
+
+        parts = [tracked, *untracked_patches]
+        return "".join(_ensure_trailing_newline(p) for p in parts if p)
 
     # -- worktree operations -----------------------------------------------
 
@@ -112,6 +124,16 @@ class GitClient:
 
     def _run(self, cwd: Path, args: list[str]) -> subprocess.CompletedProcess[str]:
         """Run a git command and raise WorkspaceError on failure."""
+        return self._run_allow_returncodes(cwd, args, allowed_returncodes={0})
+
+    def _run_allow_returncodes(
+        self,
+        cwd: Path,
+        args: list[str],
+        *,
+        allowed_returncodes: set[int],
+    ) -> subprocess.CompletedProcess[str]:
+        """Run a git command and raise WorkspaceError unless its status is allowed."""
         if shutil.which(self._git) is None:
             raise WorkspaceError(f"git binary not found: {self._git}")
         try:
@@ -124,9 +146,15 @@ class GitClient:
             )
         except FileNotFoundError as exc:
             raise WorkspaceError(f"git binary not found: {self._git}") from exc
-        if result.returncode != 0:
+        if result.returncode not in allowed_returncodes:
             raise WorkspaceError(
                 f"git {' '.join(args)} failed (exit {result.returncode}): "
                 f"{result.stderr.strip()}"
             )
         return result
+
+
+def _ensure_trailing_newline(text: str) -> str:
+    if not text or text.endswith("\n"):
+        return text
+    return text + "\n"

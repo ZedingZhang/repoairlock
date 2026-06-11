@@ -27,7 +27,7 @@
 **Status:** Complete | **Tests:** 205 passed
 
 ## Phase 8: Claude Code Tier 2 Adapter
-**Status:** Complete | **Tests:** 222 passed
+**Status:** Complete | **Tests:** 229 passed, 9 skipped
 
 ---
 
@@ -43,7 +43,7 @@
 - [x] Release notes (`RELEASE.md`) — v0.1.0 overview, features, installation, quick start, known limitations, compatibility
 - [x] Updated architecture diagram (ASCII art in README)
 - [x] README uses no exaggerated language: no "完全安全", "工业级", or "生产就绪"
-- [x] MVP completion checklist verified (18/18 criteria met)
+- [x] MVP completion checklist verified (16/16 criteria met)
 
 ### MVP Completion Checklist
 
@@ -64,14 +64,14 @@
 | 13 | Failed path cleans up temp resources | PASSED | Cleanup in `finally` block (Phase 4) |
 | 14 | Cleanup failure → manual cleanup command | PASSED | `_warn_manual_cleanup()` prints exact git commands (Phase 2) |
 | 15 | Report shows capability tier + visibility limits | PASSED | ReportGenerator includes tier description + known limits (Phase 6) |
-| 16 | ruff, mypy, pytest, CI all pass | PASSED | 0 ruff errors, 0 mypy errors, 222 tests pass (Phase 0–9) |
+| 16 | ruff, mypy, pytest, CI all pass | PASSED | 0 ruff errors, 0 mypy errors, 229 tests pass, 9 skipped (Phase 0–9) |
 
 ### Project Statistics
 
 ```
 Source files:          42 Python files
 Lines of code:         ~3,500
-Tests:                 222 passing, 10 skipped (Docker-only)
+Tests:                 229 passing, 9 skipped (Docker-only)
 ruff errors:           0
 mypy errors:           0
 Test coverage:         9 phases across models, core, workspace, sandbox,
@@ -80,7 +80,7 @@ Test coverage:         9 phases across models, core, workspace, sandbox,
 Commands:              doctor, run, inspect, replay, compare, list, cleanup
 Event types:           28 (21 Tier 0 + 7 Tier 2)
 Policy rules:          12 default rules with positive + negative tests
-Adapters:              command (Tier 0), claude_code (Tier 2)
+Adapters:              command (Tier 0), claude_code hook module (Tier 2)
 ```
 
 ### Final Verification
@@ -88,7 +88,7 @@ Adapters:              command (Tier 0), claude_code (Tier 2)
 ```bash
 $ ruff check .       # All checks passed
 $ mypy src            # Success: no issues found in 42 source files
-$ pytest -q           # 222 passed, 10 skipped
+$ pytest -q           # 229 passed, 9 skipped
 $ agentfence doctor   # 4/7 PASS (Docker not available on this host)
 $ agentfence --help   # 7 commands listed
 $ agentfence --version # agentfence v0.1.0

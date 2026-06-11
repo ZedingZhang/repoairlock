@@ -163,6 +163,14 @@ class TestValidateConfig:
         with pytest.raises(ConfigurationError, match="Invalid network mode"):
             validate_sandbox_config(config)
 
+    def test_build_rejects_invalid_network(self, base_config: SandboxConfig) -> None:
+        config = SandboxConfig(
+            image="img", command=["cmd"], workspace=Path("/ws"),
+            run_id="r1", network="host",
+        )
+        with pytest.raises(ConfigurationError, match="Invalid network mode"):
+            build_docker_run_args(config=config)
+
     def test_zero_cpus_rejected(self, base_config: SandboxConfig) -> None:
         config = SandboxConfig(
             image="img", command=["cmd"], workspace=Path("/ws"),
