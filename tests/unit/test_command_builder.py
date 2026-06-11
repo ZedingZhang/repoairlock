@@ -57,8 +57,9 @@ class TestDefaultArguments:
         mount_idx = args.index("--mount")
         mount_arg = args[mount_idx + 1]
         assert "type=bind" in mount_arg
+        assert "src=/tmp/ws" in mount_arg
         assert "dst=/workspace" in mount_arg
-        assert "rw" in mount_arg
+        assert all(part != "rw" for part in mount_arg.split(","))
 
     def test_workdir_is_workspace(self, base_config: SandboxConfig) -> None:
         args = build_docker_run_args(config=base_config)

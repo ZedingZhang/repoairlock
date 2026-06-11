@@ -125,7 +125,7 @@ class TestDefaultRules:
 
     def test_normal_mount_not_denied(self, engine: PolicyEngine) -> None:
         results = engine.evaluate_sandbox(
-            mounts=["type=bind,src=/tmp/workspace,dst=/workspace,rw"]
+            mounts=["type=bind,src=/tmp/workspace,dst=/workspace"]
         )
         r = next(r for r in results if r.rule_id == "deny-docker-socket")
         assert not r.matched
@@ -141,7 +141,7 @@ class TestDefaultRules:
 
     def test_workspace_mount_not_matched_as_root(self, engine: PolicyEngine) -> None:
         results = engine.evaluate_sandbox(
-            mounts=["type=bind,src=/tmp/ws,dst=/workspace,rw"]
+            mounts=["type=bind,src=/tmp/ws,dst=/workspace"]
         )
         r = next(r for r in results if r.rule_id == "deny-host-root-mount")
         assert not r.matched
