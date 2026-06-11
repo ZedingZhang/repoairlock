@@ -73,7 +73,7 @@ def build_docker_run_args(
     # workspace bind mount
     ws = str(config.workspace)
     args.extend([
-        "--mount", f"type=bind,src={ws},dst=/workspace,rw",
+        "--mount", f"type=bind,src={ws},dst=/workspace",
         "--workdir", "/workspace",
     ])
 

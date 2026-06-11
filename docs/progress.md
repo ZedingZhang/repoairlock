@@ -97,12 +97,12 @@ $ pytest tests/unit -q  # all pass
 ```bash
 $ SKIP_DOCKER_MOUNT_TESTS=0 pytest tests/integration tests/e2e -q -v
 ```
-- **Status (2026-06-11): FAILED on GitHub Actions `ubuntu-latest`.**
-- Root cause: `docker run --mount type=bind,src=<path>` returns exit 125
-  on GitHub Actions runners. This is a Docker daemon restriction in the
-  hosted runner environment, not a code defect.
-- To verify locally: run the commands above on a machine with unrestricted
-  Docker daemon access (e.g., a local Linux host with native Docker).
+- **Status (2026-06-11): failed before fix on GitHub Actions `ubuntu-latest`.**
+- Root cause: the generated `docker run --mount` argument used a bare `rw`
+  field (`type=bind,src=<path>,dst=/workspace,rw`). Docker `--mount` expects
+  comma-separated `key=value` fields; bind mounts are writable by default.
+- After removing the bare `rw` field, rerun this workflow to verify the full
+  Docker E2E path on GitHub Actions and on a local Linux Docker daemon.
 
 ```bash
 $ repoairlock --help   # 7 commands listed
