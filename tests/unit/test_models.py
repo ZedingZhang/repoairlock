@@ -7,9 +7,9 @@ import json
 import pytest
 from pydantic import ValidationError
 
-from agentfence.models.enums import CapabilityTier, RunStatus
-from agentfence.models.events import EventEnvelope, EventType
-from agentfence.models.manifest import (
+from repoairlock.models.enums import CapabilityTier, RunStatus
+from repoairlock.models.events import EventEnvelope, EventType
+from repoairlock.models.manifest import (
     MANIFEST_SCHEMA_VERSION,
     IntegrityMap,
     Manifest,

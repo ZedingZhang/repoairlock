@@ -1,4 +1,4 @@
-# AgentFence Implementation Progress
+# RepoAirlock Implementation Progress
 
 ## All Phases Complete
 
@@ -40,7 +40,7 @@
 ### Deliverables
 - [x] Polished README with: Problem, Solution, Capability Tiers, 5-Minute Demo, Safety Guarantees, Explicit Non-Guarantees, ASCII Architecture Diagram, Example Report, Supported Adapters, Development Roadmap, Limitations, Attribution
 - [x] Demo script (`examples/demo.sh`) — walks through full pipeline: doctor, run, INV-001 verification, list, inspect, replay, policy demo, HTML report
-- [x] Release notes (`RELEASE.md`) — v0.1.0 overview, features, installation, quick start, known limitations, compatibility
+- [x] Release notes (`RELEASE.md`) — v0.1.0-alpha overview, features, installation, quick start, known limitations, compatibility
 - [x] Updated architecture diagram (ASCII art in README)
 - [x] README uses no exaggerated language: no "完全安全", "工业级", or "生产就绪"
 - [x] MVP completion checklist verified (16/16 criteria met)
@@ -56,7 +56,7 @@
 | 5 | Docker unavailable → fail (not silent local) | PASSED | `EnvironmentError` raised; no local execution fallback is exposed (Phase 3) |
 | 6 | Default no network | PASSED | `--network none` in build_docker_run_args (Phase 3) |
 | 7 | Default resource limits exist | PASSED | `--cpus 2 --memory 4g --pids-limit 256` (Phase 3) |
-| 8 | Env allowlist injection | PASSED | Only PATH, HOME, AGENTFENCE_* + user-specified (Phase 3) |
+| 8 | Env allowlist injection | PASSED | Only PATH, HOME, REPOAIRLOCK_* + user-specified (Phase 3) |
 | 9 | Every run → manifest, events, logs, patch, report | PASSED | Orchestrator always writes all artifacts including report (Phase 4, 6) |
 | 10 | Patch replayable | PASSED | ReplayService tested with patch apply to fresh worktree (Phase 5) |
 | 11 | Tampered patch detected | PASSED | SHA-256 integrity check before replay (Phase 5) |
@@ -89,12 +89,12 @@ Adapters:              command (Tier 0), claude_code hook module (Tier 2)
 $ ruff check .       # All checks passed
 $ mypy src            # Success: no issues found in 42 source files
 $ pytest -q           # 242 passed, 9 skipped
-$ agentfence doctor   # 4/7 PASS (Docker not available on this host)
-$ agentfence --help   # 7 commands listed
-$ agentfence --version # agentfence v0.1.0
+$ repoairlock doctor   # 4/7 PASS (Docker not available on this host)
+$ repoairlock --help   # 7 commands listed
+$ repoairlock --version # repoairlock v0.1.0-alpha
 ```
 
-### Known Limitations (v0.1.0)
+### Known Limitations (v0.1.0-alpha)
 - Docker daemon required (no podman/buildah support)
 - Tier 0 cannot observe agent internal tool calls, LLM tokens, or per-command reasoning
 - Network filtering limited to on/off (no domain allowlisting)
@@ -104,7 +104,7 @@ $ agentfence --version # agentfence v0.1.0
 
 ### Project Complete
 
-AgentFence v0.1.0 is ready for public presentation. The project answers nine
+RepoAirlock v0.1.0-alpha is ready for public presentation. The project answers nine
 core questions through artifacts, tests, and reports:
 
 1. Where did the agent execute? (detached worktree, Docker container)

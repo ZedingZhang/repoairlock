@@ -11,11 +11,11 @@ from pathlib import Path
 
 import pytest
 
-from agentfence.adapters.claude_code import (
+from repoairlock.adapters.claude_code import (
     ClaudeCodeAdapter,
     _generate_hook_settings,
 )
-from agentfence.models.enums import CapabilityTier
+from repoairlock.models.enums import CapabilityTier
 
 
 class TestClaudeCodeAdapter:
@@ -44,7 +44,7 @@ class TestClaudeCodeAdapter:
         settings_idx = spec.argv.index("--settings")
         settings_path = Path(spec.argv[settings_idx + 1])
         assert settings_path.exists()
-        assert settings_path.parent.name.startswith("agentfence-hooks-run_test")
+        assert settings_path.parent.name.startswith("repoairlock-hooks-run_test")
 
         # Clean up temp files
         shutil.rmtree(settings_path.parent, ignore_errors=True)
@@ -131,7 +131,7 @@ class TestHookHandler:
     @pytest.fixture
     def handler_script(self, tmp_path: Path) -> Path:
         """Extract the embedded hook handler script to a temp file."""
-        from agentfence.adapters.claude_code import _HOOK_HANDLER_SCRIPT
+        from repoairlock.adapters.claude_code import _HOOK_HANDLER_SCRIPT
         script = tmp_path / "hook_handler.py"
         script.write_text(_HOOK_HANDLER_SCRIPT)
         return script
@@ -150,8 +150,8 @@ class TestHookHandler:
     ) -> subprocess.CompletedProcess:
         env = {
             **os.environ,
-            "AGENTFENCE_EVENTS_PATH": str(events_path),
-            "AGENTFENCE_RUN_ID": run_id,
+            "REPOAIRLOCK_EVENTS_PATH": str(events_path),
+            "REPOAIRLOCK_RUN_ID": run_id,
         }
         hook_input = json.dumps({
             "hook_event_name": "PreToolUse",
@@ -246,8 +246,8 @@ class TestHookHandler:
     ) -> None:
         env = {
             **os.environ,
-            "AGENTFENCE_EVENTS_PATH": str(events_path),
-            "AGENTFENCE_RUN_ID": "run_test",
+            "REPOAIRLOCK_EVENTS_PATH": str(events_path),
+            "REPOAIRLOCK_RUN_ID": "run_test",
         }
         r = subprocess.run(
             [sys.executable, str(handler_script)],
@@ -264,7 +264,7 @@ class TestHookHandler:
         broken_script = handler_script.parent / "broken_handler.py"
         broken_script.write_text(
             handler_script.read_text().replace(
-                "from agentfence.policy.engine import PolicyEngine",
+                "from repoairlock.policy.engine import PolicyEngine",
                 "raise RuntimeError('policy import failed')",
             )
         )
@@ -282,7 +282,7 @@ class TestHookHandler:
         self, tmp_path: Path,
     ) -> None:
         """Verify adapter creates config in a temp directory, not in ~/.claude."""
-        from agentfence.adapters.claude_code import ClaudeCodeAdapter
+        from repoairlock.adapters.claude_code import ClaudeCodeAdapter
         adapter = ClaudeCodeAdapter()
         spec = adapter.build_launch_spec(
             workspace=tmp_path,

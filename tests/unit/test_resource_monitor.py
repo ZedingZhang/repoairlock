@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from agentfence.sandbox.resource_monitor import _parse_size
+from repoairlock.sandbox.resource_monitor import _parse_size
 
 
 class TestParseSize:

@@ -6,13 +6,13 @@ import json
 import subprocess
 from pathlib import Path
 
-import agentfence.core.orchestrator as orchestrator_module
-from agentfence.artifacts.integrity import sha256_file
-from agentfence.core.orchestrator import RunConfig, RunOrchestrator
-from agentfence.exceptions import CleanupError
-from agentfence.models.enums import RunStatus
-from agentfence.sandbox.base import ResourceSample, RunResult, SandboxConfig
-from agentfence.workspace.manager import WorkspaceManager
+import repoairlock.core.orchestrator as orchestrator_module
+from repoairlock.artifacts.integrity import sha256_file
+from repoairlock.core.orchestrator import RunConfig, RunOrchestrator
+from repoairlock.exceptions import CleanupError
+from repoairlock.models.enums import RunStatus
+from repoairlock.sandbox.base import ResourceSample, RunResult, SandboxConfig
+from repoairlock.workspace.manager import WorkspaceManager
 
 
 def _init_repo(path: Path) -> None:

@@ -7,9 +7,9 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from agentfence.exceptions import ConfigurationError
-from agentfence.policy.engine import PolicyEngine
-from agentfence.policy.models import (
+from repoairlock.exceptions import ConfigurationError
+from repoairlock.policy.engine import PolicyEngine
+from repoairlock.policy.models import (
     PolicyDecision,
     PolicyResult,
     PolicyRule,
@@ -17,11 +17,11 @@ from agentfence.policy.models import (
     RiskLevel,
     RuleMatch,
 )
-from agentfence.policy.rules import (
+from repoairlock.policy.rules import (
     evaluate_text_input,
 )
-from agentfence.sandbox.base import SandboxConfig
-from agentfence.sandbox.command_builder import validate_sandbox_config
+from repoairlock.sandbox.base import SandboxConfig
+from repoairlock.sandbox.command_builder import validate_sandbox_config
 
 # -- fixtures --------------------------------------------------------------
 

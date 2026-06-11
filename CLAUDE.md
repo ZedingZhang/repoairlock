@@ -1,7 +1,7 @@
-# AgentFence Engineering Rules
+# RepoAirlock Engineering Rules
 
 ## Product boundary
-AgentFence is a safety-oriented execution harness for coding agents. It is not a coding agent. Do not add LLM orchestration, code repair logic, autonomous planning, retrieval, memory, or multi-agent features.
+RepoAirlock is a safety-oriented execution harness for coding agents. It is not a coding agent. Do not add LLM orchestration, code repair logic, autonomous planning, retrieval, memory, or multi-agent features.
 
 ## Non-negotiable invariants
 - Never mutate the user's original working tree.

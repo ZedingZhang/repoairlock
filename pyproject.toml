@@ -3,14 +3,14 @@ requires = ["setuptools>=75", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "agentfence"
-version = "0.1.0"
-description = "Safety-oriented execution harness for coding agents"
+name = "repoairlock"
+version = "0.1.0-alpha"
+description = "Safety-oriented execution harness for coding agents — alpha candidate"
 readme = "README.md"
 requires-python = ">=3.12"
 license = {text = "MIT"}
 authors = [
-    {name = "AgentFence Authors"}
+    {name = "Zeding Zhang"}
 ]
 dependencies = [
     "typer>=0.15",
@@ -27,7 +27,7 @@ dev = [
 ]
 
 [project.scripts]
-agentfence = "agentfence.cli:app"
+repoairlock = "repoairlock.cli:app"
 
 [tool.ruff]
 target-version = "py312"

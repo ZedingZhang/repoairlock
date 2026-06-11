@@ -1,4 +1,4 @@
-# AgentFence Threat Model
+# RepoAirlock Threat Model
 
 ## Protected Assets
 
@@ -21,8 +21,8 @@
 
 ### Limited Trust
 - Local Git and Docker CLI
-- AgentFence's own process
-- AgentFence configuration files
+- RepoAirlock's own process
+- RepoAirlock configuration files
 - User-explicitly-provided agent command
 
 ## Risks Explicitly Mitigated (MVP)
