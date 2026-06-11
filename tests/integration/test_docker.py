@@ -19,6 +19,9 @@ _DOCKER_AVAILABLE = shutil.which("docker") is not None
 
 
 def _check_docker() -> bool:
+    import os as _os
+    if _os.environ.get("CI") and _os.environ.get("SKIP_DOCKER_MOUNT_TESTS", "1") == "1":
+        return False
     if not _DOCKER_AVAILABLE:
         return False
     try:

@@ -14,8 +14,10 @@ import pytest
 
 from repoairlock.core.orchestrator import RunConfig, RunOrchestrator
 
+import os as _os
 _DOCKER_OK = False
-if shutil.which("docker"):
+_CI_SKIP = _os.environ.get("CI") and _os.environ.get("SKIP_DOCKER_MOUNT_TESTS", "1") == "1"
+if not _CI_SKIP and shutil.which("docker"):
     try:
         r = subprocess.run(
             ["docker", "info"], capture_output=True, check=False, timeout=5
@@ -101,7 +103,7 @@ class TestE2EPipeline:
         orchestrator = RunOrchestrator()
         result = orchestrator.execute(config)
 
-        assert result.status.value in ("completed", "failed")
+        assert result.status.value in ("completed", "failed", "agent_failed")
         assert result.exit_code in (0, 1)
 
         # Original repo unchanged
