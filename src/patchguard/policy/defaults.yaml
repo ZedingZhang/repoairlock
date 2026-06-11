@@ -1,0 +1,97 @@
+schema_version: "1.0"
+rules:
+  - id: deny-privileged
+    applies_to: docker
+    match:
+      docker_param: privileged
+    decision: deny
+    severity: critical
+    reason: Privileged containers grant host-level control and must never be used
+
+  - id: deny-host-network
+    applies_to: docker
+    match:
+      docker_param: host_network
+    decision: deny
+    severity: critical
+    reason: Host networking bypasses container network isolation
+
+  - id: deny-docker-socket
+    applies_to: mount
+    match:
+      path: /var/run/docker.sock
+    decision: deny
+    severity: critical
+    reason: Docker socket grants host-level container control
+
+  - id: deny-host-root-mount
+    applies_to: mount
+    match:
+      path: /
+    decision: deny
+    severity: critical
+    reason: Mounting host root filesystem grants unlimited access
+
+  - id: deny-git-destructive
+    applies_to: bash
+    match:
+      regex: '(^|\s)git\s+(reset\s+--hard|clean\s+-[^\n]*f|checkout\s+--\s+\.)'
+    decision: deny
+    severity: high
+    reason: Destructive git operation that could lose uncommitted work
+
+  - id: deny-rm-protected
+    applies_to: bash
+    match:
+      regex: '(^|\s)rm\s+-[^\n]*r[^\n]*f[^\n]*(/|~|\$HOME)(?:\s|$)'
+    decision: deny
+    severity: critical
+    reason: Recursive force deletion targeting root, home, or protected paths
+
+  - id: deny-curl-pipe-shell
+    applies_to: bash
+    match:
+      regex: 'curl\s+.*\|\s*(ba)?sh'
+    decision: deny
+    severity: high
+    reason: curl-pipe-shell pattern bypasses code review and is a common attack vector
+
+  - id: deny-write-git-hooks
+    applies_to: bash
+    match:
+      regex: '(^|\s)(echo|tee|cp|mv|install|touch|dd)\s+.*\.git/hooks/'
+    decision: deny
+    severity: high
+    reason: Writing to .git/hooks can lead to arbitrary code execution on commit
+
+  - id: deny-modify-shell-profile
+    applies_to: bash
+    match:
+      regex: '(^|\s)(echo|tee|>>)\s+.*\.(bashrc|profile|zshrc|bash_profile)'
+    decision: deny
+    severity: high
+    reason: Modifying shell profiles can lead to persistent code execution
+
+  - id: deny-read-credentials
+    applies_to: bash
+    match:
+      regex: '(^|\s)cat\s+.*(\.env|credentials|\.ssh/id_|\.aws/credentials|\.config/gcloud)'
+    decision: deny
+    severity: high
+    reason: Reading credential files may expose secrets to agent logs
+
+  - id: deny-fork-bomb
+    applies_to: bash
+    match:
+      regex: '\(\)\s*\{\s*.*\|.*&\s*\}|:\(\s*\)\s*\{\s*:\|:&\s*\}|fork\s*bomb'
+    decision: deny
+    severity: critical
+    reason: Fork bomb pattern detected — would exhaust system process limits
+
+  - id: deny-very-long-command
+    applies_to: bash
+    match:
+      regex: '.{10000,}'
+    decision: deny
+    severity: medium
+    reason: Command exceeds 10,000 characters — possible obfuscation or injection attempt

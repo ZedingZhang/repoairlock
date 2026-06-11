@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PatchGuard Report — {{ run_id }}</title>
+<style>
+  body { font-family: system-ui, -apple-system, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; color: #1a1a1a; }
+  h1 { border-bottom: 2px solid #333; padding-bottom: .5rem; }
+  h2 { margin-top: 2.5rem; border-bottom: 1px solid #ccc; padding-bottom: .3rem; }
+  .grid { display: grid; grid-template-columns: 220px 1fr; gap: .4rem; margin: 1rem 0; }
+  .label { font-weight: 600; color: #555; }
+  .passed { color: #15803d; font-weight: 600; }
+  .failed { color: #dc2626; font-weight: 600; }
+  .note { background: #fffbe6; padding: 1rem 1.2rem; border-left: 4px solid #f59e0b; margin: 1.2rem 0; border-radius: 0 4px 4px 0; }
+  .warn { background: #fef2f2; padding: 1rem 1.2rem; border-left: 4px solid #dc2626; margin: 1.2rem 0; border-radius: 0 4px 4px 0; }
+  .info { background: #eff6ff; padding: 1rem 1.2rem; border-left: 4px solid #3b82f6; margin: 1.2rem 0; border-radius: 0 4px 4px 0; }
+  pre { background: #f5f5f5; padding: 1rem; border-radius: 4px; overflow-x: auto; font-size: .9rem; }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+  th, td { text-align: left; padding: .5rem .8rem; border-bottom: 1px solid #e5e5e5; }
+  th { background: #fafafa; font-weight: 600; }
+  .findings { list-style: none; padding: 0; }
+  .findings li { padding: .4rem 0; border-bottom: 1px solid #f0f0f0; }
+  .findings li:before { content: "• "; color: #3b82f6; font-weight: bold; }
+  footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #e5e5e5; font-size: .85rem; color: #888; }
+</style>
+</head>
+<body>
+
+<h1>PatchGuard Run Report</h1>
+
+<div class="grid">
+  <div class="label">Run ID</div><div><code>{{ run_id }}</code></div>
+  <div class="label">Status</div>
+  <div>{% if run_summary.status == "completed" %}<span class="passed">COMPLETED</span>{% elif run_summary.status == "failed" %}<span class="failed">FAILED</span>{% elif run_summary.status == "timed_out" %}<span class="failed">TIMED OUT</span>{% else %}{{ run_summary.status }}{% endif %}</div>
+  <div class="label">Capability Tier</div><div><strong>{{ capability_tier }}</strong></div>
+  <div class="label">Created</div><div>{{ run_summary.created_at }}</div>
+  <div class="label">Completed</div><div>{{ run_summary.completed_at }}</div>
+</div>
+
+<div class="note">
+  <strong>Capability Tier:</strong> {{ capability_tier_description }}
+</div>
+
+<div class="warn">
+  <strong>Known Visibility Limits:</strong> {{ capability_visibility_limits }}
+</div>
+
+<div class="info">
+  <strong>Adapter:</strong> {{ adapter.get("name", "unknown") }} v{{ adapter.get("version", "?") }}
+  {% if adapter.get("command_redacted") %}<br><strong>Command:</strong> <code>{{ adapter.command_redacted | join(" ") }}</code>{% endif %}
+</div>
+
+<!-- Run Summary -->
+<h2>1. Run Summary</h2>
+<div class="grid">
+  <div class="label">Wall Time</div><div>{{ run_metrics.wall_time_ms }} ms</div>
+  <div class="label">Agent Exit Code</div><div>{{ run_metrics.agent_exit_code }}</div>
+  <div class="label">Timed Out</div><div>{{ run_metrics.timed_out }}</div>
+  <div class="label">Cleanup Success</div><div>{{ run_metrics.cleanup_success }}</div>
+  <div class="label">Repository</div><div><code>{{ run_summary.repo_path }}</code></div>
+  <div class="label">HEAD SHA</div><div><code>{{ run_summary.head_sha }}</code></div>
+</div>
+
+<!-- Safety Posture -->
+<h2>2. Safety Posture</h2>
+<div class="grid">
+  <div class="label">Network Mode</div><div><code>{{ safety_posture.network_mode }}</code></div>
+  <div class="label">Read-Only Rootfs</div><div>{{ safety_posture.read_only_rootfs }}</div>
+  <div class="label">Privileged</div><div class="{% if safety_posture.privileged %}failed{% else %}passed{% endif %}">{{ safety_posture.privileged }}</div>
+  <div class="label">Unsafe Local Exec</div><div class="{% if safety_posture.unsafe_local_execution %}failed{% else %}passed{% endif %}">{{ safety_posture.unsafe_local_execution }}</div>
+  <div class="label">Source Workspace Unchanged</div><div class="{% if safety_posture.source_workspace_unchanged %}passed{% else %}failed{% endif %}">{{ safety_posture.source_workspace_unchanged }}</div>
+</div>
+
+<div class="grid">
+  <div class="label">Sandbox Image</div><div>{{ sandbox_config.image }}</div>
+  <div class="label">CPUs</div><div>{{ sandbox_config.cpus }}</div>
+  <div class="label">Memory</div><div>{{ sandbox_config.memory }}</div>
+  <div class="label">PIDs Limit</div><div>{{ sandbox_config.pids_limit }}</div>
+  <div class="label">Timeout</div><div>{{ sandbox_config.timeout_seconds }}s</div>
+</div>
+
+<!-- Repository Change Summary -->
+<h2>3. Repository Change Summary</h2>
+<table>
+  <tr><th>Metric</th><th>Value</th></tr>
+  <tr><td>Files Changed</td><td>{{ repository_change_summary.files_changed }}</td></tr>
+  <tr><td>Files Added</td><td>{{ repository_change_summary.files_added }}</td></tr>
+  <tr><td>Files Deleted</td><td>{{ repository_change_summary.files_deleted }}</td></tr>
+  <tr><td>Lines Added</td><td>{{ repository_change_summary.lines_added }}</td></tr>
+  <tr><td>Lines Deleted</td><td>{{ repository_change_summary.lines_deleted }}</td></tr>
+  <tr><td>Binary Files Changed</td><td>{{ repository_change_summary.binary_files_changed }}</td></tr>
+</table>
+{% if repository_change_summary.changed_paths %}
+<p><strong>Changed Paths:</strong></p>
+<ul>{% for p in repository_change_summary.changed_paths %}<li><code>{{ p }}</code></li>{% endfor %}</ul>
+{% endif %}
+{% if repository_change_summary.touched_sensitive_paths %}
+<div class="warn"><strong>⚠ Touched Sensitive Paths:</strong> {{ repository_change_summary.touched_sensitive_paths }}</div>
+{% endif %}
+
+<!-- Verification Result -->
+<h2>4. Verification Result</h2>
+{% if verification_result.verifier_configured %}
+<div class="grid">
+  <div class="label">Verifier Exit Code</div><div>{{ verification_result.verifier_exit_code }}</div>
+  <div class="label">Verifier Passed</div><div class="{% if verification_result.verifier_passed %}passed{% else %}failed{% endif %}">{{ "PASSED" if verification_result.verifier_passed else "FAILED" }}</div>
+</div>
+{% else %}
+<p><em>No verifier configured for this run.</em></p>
+{% endif %}
+
+<!-- Resource Usage -->
+<h2>5. Resource Usage</h2>
+<table>
+  <tr><th>Metric</th><th>Value</th></tr>
+  <tr><td>Peak Memory</td><td>{{ resource_usage.peak_memory_bytes }} bytes</td></tr>
+  <tr><td>Average CPU</td><td>{{ resource_usage.avg_cpu_percent }}%</td></tr>
+  <tr><td>Peak PIDs</td><td>{{ resource_usage.peak_pids }}</td></tr>
+  <tr><td>Network RX</td><td>{{ resource_usage.network_rx_bytes }} bytes</td></tr>
+  <tr><td>Network TX</td><td>{{ resource_usage.network_tx_bytes }} bytes</td></tr>
+  <tr><td>Samples</td><td>{{ resource_usage.sample_count }}</td></tr>
+</table>
+
+<!-- Quality & Policy Findings -->
+<h2>6. Quality &amp; Policy Findings</h2>
+{% if quality_findings %}
+<ul class="findings">
+{% for f in quality_findings %}<li>{{ f }}</li>{% endfor %}
+</ul>
+{% else %}
+<p><em>No findings.</em></p>
+{% endif %}
+
+<!-- Artifact Integrity -->
+<h2>7. Artifact Integrity</h2>
+<table>
+  <tr><th>Artifact</th><th>SHA-256</th></tr>
+  <tr><td>events.jsonl</td><td><code>{{ artifact_integrity.events_jsonl[:32] }}{% if artifact_integrity.events_jsonl %}...{% endif %}</code></td></tr>
+  <tr><td>patch.diff</td><td><code>{{ artifact_integrity.patch_diff[:32] }}{% if artifact_integrity.patch_diff %}...{% endif %}</code></td></tr>
+</table>
+
+<!-- Replay Instructions -->
+<h2>8. Replay Instructions</h2>
+<pre>{{ replay_instructions.command }}</pre>
+<p>{{ replay_instructions.note }}</p>
+
+<footer>
+  <p>Generated by PatchGuard v0.1.0 — {{ capability_tier }} report.</p>
+  <p>This report reflects process-level observability only. See "Known Visibility Limits" for what this report cannot confirm.</p>
+</footer>
+
+</body>
+</html>
