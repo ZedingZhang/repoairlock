@@ -125,7 +125,8 @@ RepoAirlock v0.1.0 alpha release candidate is ready for public preview. The proj
 core questions through artifacts, tests, and reports:
 
 1. Where did the agent execute? (detached worktree, Docker container)
-2. What could it access? (workspace only, no network, no privileges)
+2. What could it access? (workspace only, no network, no Docker privileged mode,
+   only `DAC_OVERRIDE` retained)
 3. What did it actually modify? (patch.diff with SHA-256)
 4. What risky operations did it attempt? (policy findings in report)
 5. Is the original workspace unchanged? (before/after fingerprints)
