@@ -28,11 +28,11 @@ user's original working tree.
 
 | Tier | Name | What You Get |
 |------|------|-------------|
-| 0 | Process Wrapper | Container isolation, artifact recording, patch export, resource monitoring, HTML reports |
+| 0 | Process Wrapper | Container isolation, artifact recording, patch export, resource monitoring, best-effort HTML reports |
 | 1 | Structured Events | Import agent tool-call traces for process quality metrics |
 | 2 | Enforcement (preview only) | Pre-execution policy checks on individual tool calls (Bash/Edit/Write) via Claude Code hook adapter |
 
-**Current status:** v0.1.1-alpha, Tier 0 stabilization in progress.
+**Current status:** v0.1.1-alpha. Tier 0 alpha verified.
 Claude Code Tier 2 hook adapter module is preview only; the v0.1 CLI `run` path
 uses the command adapter.
 
@@ -63,16 +63,19 @@ repoairlock replay <run-id> --repo examples/demo-repo
 # 6. Compare two runs
 repoairlock compare <run-a> <run-b>
 
-# 7. View the HTML report
+# 7. View the HTML report, if report generation succeeded
 open ~/.repoairlock/runs/<run-id>/report.html
 ```
 
 ## Safety Guarantees
 
 - Agent never runs in the user's original working tree (INV-001)
-- Containers run without network, without privileges, with CPU/memory/PID limits by default
+- Containers run without network and without Docker privileged mode by default;
+  all Linux capabilities are dropped except `DAC_OVERRIDE`, which is retained
+  so root inside the container can write to the bind-mounted workspace
 - Environment variables are injected via explicit allowlist — never the full host environment
-- Every sandbox execution attempt produces auditable artifacts (manifest, events, logs, patch, report) even on failure
+- Every sandbox execution attempt produces core auditable artifacts (manifest,
+  events, logs, patch) even on failure; JSON/HTML report generation is best-effort
 - Original workspace fingerprints are verified before and after every run
 - Patch integrity verified via SHA-256 before replay
 - Sandbox-configuration policy enforcement rejects dangerous Docker parameters at construction time
@@ -133,7 +136,7 @@ enable network access (`--network bridge`), the agent can make outbound connecti
 
 ## Example Report
 
-Run `repoairlock run --repo examples/demo-repo --image alpine -- sh -c "..."` to generate an HTML report with these sections:
+When best-effort report generation succeeds, `repoairlock run --repo examples/demo-repo --image alpine -- sh -c "..."` produces an HTML report with these sections:
 
 1. **Run Summary** — status, wall time, exit code, HEAD SHA
 2. **Safety Posture** — network mode, privileged status, env allowlist, INV-001
