@@ -135,11 +135,23 @@ The default v0.1 `run` path executes the user-provided command through the
 Docker backend. The Claude Code adapter is a preview hook integration, not a
 separate stage after sandbox execution.
 
+## Demo Screenshots
+
+**HTML report**
+
+![RepoAirlock demo HTML report screenshot](docs/assets/demo-report.png)
+
+**Audit trail**
+
+![RepoAirlock demo audit trail screenshot](docs/assets/demo-audit-trail.png)
+
+**CLI output**
+
+![RepoAirlock demo CLI output screenshot](docs/assets/demo-cli-output.png)
+
 ## Example Report
 
 When best-effort report generation succeeds, `repoairlock run --repo examples/demo-repo --image alpine -- sh -c "..."` produces an HTML report with these sections:
-
-![RepoAirlock demo HTML report screenshot](docs/assets/demo-report.png)
 
 1. **Run Summary** — status, wall time, exit code, HEAD SHA
 2. **Safety Posture** — network mode, privileged status, env allowlist, INV-001
