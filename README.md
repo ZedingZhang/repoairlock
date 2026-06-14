@@ -1,5 +1,7 @@
 # RepoAirlock
 
+[![CI](https://github.com/ZedingZhang/repoairlock/actions/workflows/ci.yml/badge.svg)](https://github.com/ZedingZhang/repoairlock/actions/workflows/ci.yml)
+
 Safety-oriented execution harness for coding agents.
 
 English | [中文](README.zh-CN.md)
