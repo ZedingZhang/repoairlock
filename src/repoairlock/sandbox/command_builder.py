@@ -6,6 +6,7 @@ Forbidden options are rejected at construction time (fail-closed).
 
 from __future__ import annotations
 
+import re
 from collections.abc import Sequence
 
 from repoairlock.exceptions import ConfigurationError
@@ -16,6 +17,8 @@ from repoairlock.sandbox.base import SandboxConfig
 FORBIDDEN_FLAGS = frozenset({"--privileged", "--network host", "--pid host", "--ipc host"})
 FORBIDDEN_CAP_ADD = frozenset({"ALL", "SYS_ADMIN", "NET_ADMIN", "SYS_PTRACE"})
 FORBIDDEN_MOUNTS = frozenset({"/var/run/docker.sock", "/"})
+ENV_VAR_NAME_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+MEMORY_LIMIT_RE = re.compile(r"^[1-9][0-9]*[bkmgBKMG]?$")
 
 
 def _assert_safe_flag(flag: str) -> None:
@@ -24,14 +27,39 @@ def _assert_safe_flag(flag: str) -> None:
 
 
 def _assert_safe_mount(source: str) -> None:
-    if source.rstrip("/") in FORBIDDEN_MOUNTS or source == "/":
-        raise ConfigurationError(
-            f"Forbidden mount source rejected: {source}"
-        )
     if source.endswith("docker.sock"):
         raise ConfigurationError(
             f"Docker socket mount rejected: {source}"
         )
+    if source.rstrip("/") in FORBIDDEN_MOUNTS or source == "/":
+        raise ConfigurationError(
+            f"Forbidden mount source rejected: {source}"
+        )
+
+
+def _assert_env_allowlist_names(env_allow: Sequence[str]) -> None:
+    for var in env_allow:
+        if not ENV_VAR_NAME_RE.fullmatch(var):
+            raise ConfigurationError(
+                "Env allowlist entries must be variable names, "
+                f"not assignments or shell syntax: {var!r}"
+            )
+
+
+def _assert_memory_limit(memory: str) -> None:
+    if not MEMORY_LIMIT_RE.fullmatch(memory):
+        raise ConfigurationError(
+            "Memory limit must be a positive Docker size like '512m' or '4g'"
+        )
+
+
+def _mount_source_paths(mount: str) -> list[str]:
+    sources: list[str] = []
+    for part in mount.split(","):
+        key, separator, value = part.partition("=")
+        if separator and key in {"src", "source"}:
+            sources.append(value)
+    return sources
 
 
 def build_docker_run_args(
@@ -81,9 +109,8 @@ def build_docker_run_args(
     # extra mounts — validate each one
     for mount in (extra_mounts or []):
         # mount format: type=bind,src=<path>,dst=<path>
-        if "src=" in mount:
-            src_part = [p for p in mount.split(",") if p.startswith("src=")][0]
-            src_path = src_part.removeprefix("src=")
+        # Docker also accepts source=<path> as a src= alias.
+        for src_path in _mount_source_paths(mount):
             _assert_safe_mount(src_path)
         args.extend(["--mount", mount])
 
@@ -115,8 +142,12 @@ def validate_sandbox_config(config: SandboxConfig) -> None:
         raise ConfigurationError(f"Invalid network mode: {config.network}")
     if config.cpus <= 0:
         raise ConfigurationError("CPUs must be positive")
+    if config.timeout_seconds <= 0:
+        raise ConfigurationError("Timeout must be positive")
     if config.pids_limit <= 0:
         raise ConfigurationError("PIDs limit must be positive")
+    _assert_memory_limit(config.memory)
+    _assert_env_allowlist_names(config.env_allow)
 
     # Reject forbidden flags
     _assert_safe_flag(f"--network {config.network}")

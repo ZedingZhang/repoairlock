@@ -27,6 +27,7 @@ from repoairlock.models.manifest import (
 )
 from repoairlock.sandbox.base import RunResult as SandboxRunResult
 from repoairlock.sandbox.base import SandboxConfig
+from repoairlock.sandbox.command_builder import validate_sandbox_config
 from repoairlock.sandbox.docker import DockerBackend
 from repoairlock.workspace.fingerprint import capture_fingerprint
 from repoairlock.workspace.git_client import GitClient
@@ -80,6 +81,7 @@ class RunOrchestrator:
 
         # 1. Validate
         repo_toplevel = self._git.assert_git_repo(config.repo)
+        _validate_run_sandbox_config(config, workspace=repo_toplevel)
         self._docker.assert_available()
 
         # Capture the name before we start building the manifest
@@ -400,6 +402,23 @@ def _now_iso() -> str:
     from datetime import UTC, datetime
     now = datetime.now(UTC)
     return now.strftime("%Y-%m-%dT%H:%M:%S.") + f"{now.microsecond // 1000:03d}Z"
+
+
+def _validate_run_sandbox_config(config: RunConfig, *, workspace: Path) -> None:
+    validate_sandbox_config(
+        SandboxConfig(
+            image=config.image,
+            command=list(config.agent_command),
+            workspace=workspace,
+            run_id="repoairlock-config-validation",
+            network=config.network,
+            cpus=config.cpus,
+            memory=config.memory,
+            pids_limit=config.pids_limit,
+            timeout_seconds=config.timeout,
+            env_allow=config.env_allow,
+        )
+    )
 
 
 def merge_status(current: RunStatus, incoming: RunStatus) -> RunStatus:

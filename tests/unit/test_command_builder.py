@@ -103,6 +103,28 @@ class TestEnvironmentVariables:
         assert "ANTHROPIC_API_KEY" in env_values
         assert "OPENAI_API_KEY" in env_values
 
+    def test_env_allow_rejects_inline_assignment(self) -> None:
+        config = SandboxConfig(
+            image="img",
+            command=["cmd"],
+            workspace=Path("/ws"),
+            run_id="r1",
+            env_allow=["OPENAI_API_KEY=secret"],
+        )
+        with pytest.raises(ConfigurationError, match="variable names"):
+            build_docker_run_args(config=config)
+
+    def test_env_allow_rejects_shell_syntax(self) -> None:
+        config = SandboxConfig(
+            image="img",
+            command=["cmd"],
+            workspace=Path("/ws"),
+            run_id="r1",
+            env_allow=["$(printenv)"],
+        )
+        with pytest.raises(ConfigurationError, match="variable names"):
+            validate_sandbox_config(config)
+
     def test_run_id_in_environment(self, base_config: SandboxConfig) -> None:
         args = build_docker_run_args(config=base_config)
         env_indices = [i for i, a in enumerate(args) if a == "--env"]
@@ -132,6 +154,26 @@ class TestForbiddenOptions:
                 if part == "src=/" or part.startswith("src=/,dst="):
                     src_match = True
             assert not src_match, f"Root mount detected in: {m}"
+
+    def test_extra_mount_rejects_source_alias_root(
+        self, base_config: SandboxConfig
+    ) -> None:
+        with pytest.raises(ConfigurationError, match="Forbidden mount"):
+            build_docker_run_args(
+                config=base_config,
+                extra_mounts=["type=bind,source=/,target=/host"],
+            )
+
+    def test_extra_mount_rejects_source_alias_docker_socket(
+        self, base_config: SandboxConfig
+    ) -> None:
+        with pytest.raises(ConfigurationError, match="Docker socket"):
+            build_docker_run_args(
+                config=base_config,
+                extra_mounts=[
+                    "type=bind,source=/var/run/docker.sock,target=/var/run/docker.sock"
+                ],
+            )
 
     def test_no_host_network(self, base_config: SandboxConfig) -> None:
         args = build_docker_run_args(config=base_config)
@@ -182,6 +224,39 @@ class TestValidateConfig:
             run_id="r1", cpus=0,
         )
         with pytest.raises(ConfigurationError, match="CPUs must be positive"):
+            validate_sandbox_config(config)
+
+    def test_zero_timeout_rejected(self, base_config: SandboxConfig) -> None:
+        config = SandboxConfig(
+            image="img",
+            command=["cmd"],
+            workspace=Path("/ws"),
+            run_id="r1",
+            timeout_seconds=0,
+        )
+        with pytest.raises(ConfigurationError, match="Timeout must be positive"):
+            validate_sandbox_config(config)
+
+    def test_invalid_memory_rejected(self, base_config: SandboxConfig) -> None:
+        config = SandboxConfig(
+            image="img",
+            command=["cmd"],
+            workspace=Path("/ws"),
+            run_id="r1",
+            memory="four gigs",
+        )
+        with pytest.raises(ConfigurationError, match="Memory limit"):
+            validate_sandbox_config(config)
+
+    def test_zero_memory_rejected(self, base_config: SandboxConfig) -> None:
+        config = SandboxConfig(
+            image="img",
+            command=["cmd"],
+            workspace=Path("/ws"),
+            run_id="r1",
+            memory="0",
+        )
+        with pytest.raises(ConfigurationError, match="Memory limit"):
             validate_sandbox_config(config)
 
     def test_zero_pids_rejected(self, base_config: SandboxConfig) -> None:

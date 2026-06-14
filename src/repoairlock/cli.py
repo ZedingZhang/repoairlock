@@ -289,7 +289,8 @@ def run(
         NetworkMode, typer.Option("--network", help="Network mode")
     ] = NetworkMode.NONE,
     env_allow: Annotated[
-        list[str] | None, typer.Option("--env-allow", help="Env vars to pass to container")
+        list[str] | None,
+        typer.Option("--env-allow", help="Env var names to pass to container"),
     ] = None,
     runs_dir: Annotated[
         Path | None, typer.Option("--runs-dir", help="Custom runs directory")

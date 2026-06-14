@@ -6,11 +6,14 @@ import json
 import subprocess
 from pathlib import Path
 
+import pytest
+
 import repoairlock.core.orchestrator as orchestrator_module
 from repoairlock.artifacts.integrity import sha256_file
 from repoairlock.artifacts.store import ArtifactStore
+from repoairlock.constants import VERSION
 from repoairlock.core.orchestrator import RunConfig, RunOrchestrator, merge_status
-from repoairlock.exceptions import CleanupError
+from repoairlock.exceptions import CleanupError, ConfigurationError
 from repoairlock.models.enums import RunStatus
 from repoairlock.sandbox.base import ResourceSample, RunResult, SandboxConfig
 from repoairlock.workspace.manager import WorkspaceManager
@@ -110,6 +113,7 @@ def test_orchestrator_finalizes_events_report_and_integrity(tmp_path: Path) -> N
     assert manifest["integrity"]["events.jsonl"] == sha256_file(result.run_dir / "events.jsonl")
     assert manifest["integrity"]["report.json"] == sha256_file(result.run_dir / "report.json")
     assert manifest["integrity"]["patch.diff"] == sha256_file(result.run_dir / "patch.diff")
+    assert report["repoairlock_version"] == VERSION
     assert report["run_summary"]["status"] == "completed"
     assert report["run_summary"]["head_sha"]
     assert report["artifact_integrity"]["events_jsonl"] == manifest["integrity"]["events.jsonl"]
@@ -312,6 +316,52 @@ def test_report_failure_does_not_override_invariant_violation(
     assert manifest["status"] == "invariant_violation"
     assert not (result.run_dir / "report.json").exists()
     assert not (result.run_dir / "report.html").exists()
+
+
+def test_invalid_env_allowlist_fails_before_docker_run(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+
+    backend = FakeDockerBackend()
+    orchestrator = RunOrchestrator()
+    orchestrator._docker = backend
+
+    with pytest.raises(ConfigurationError, match="variable names"):
+        orchestrator.execute(
+            RunConfig(
+                repo=repo,
+                agent_command=["fake-agent"],
+                image="fake-image",
+                env_allow=["OPENAI_API_KEY=secret"],
+                runs_dir=tmp_path / "runs",
+            )
+        )
+
+    assert backend.agent_runs == 0
+    assert not (tmp_path / "runs").exists()
+
+
+def test_invalid_timeout_fails_before_docker_run(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+
+    backend = FakeDockerBackend()
+    orchestrator = RunOrchestrator()
+    orchestrator._docker = backend
+
+    with pytest.raises(ConfigurationError, match="Timeout must be positive"):
+        orchestrator.execute(
+            RunConfig(
+                repo=repo,
+                agent_command=["fake-agent"],
+                image="fake-image",
+                timeout=0,
+                runs_dir=tmp_path / "runs",
+            )
+        )
+
+    assert backend.agent_runs == 0
+    assert not (tmp_path / "runs").exists()
 
 
 def test_merge_status_preserves_higher_priority_status() -> None:
