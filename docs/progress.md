@@ -41,6 +41,7 @@
 - [x] Demo script (`examples/demo.sh`) — walks through full pipeline: doctor, run, INV-001 verification, list, inspect, replay, policy demo, HTML report
 - [x] Release notes (`RELEASE.md`) — v0.1.0-alpha overview, features, installation, quick start, known limitations, compatibility
 - [x] Updated architecture diagram (ASCII art in README)
+- [x] Added demo HTML report screenshot (`docs/assets/demo-report.png`) to both READMEs
 - [x] README uses no exaggerated language: no "完全安全", "工业级", or "生产就绪"
 - [x] MVP completion checklist verified (16/16 criteria met)
 

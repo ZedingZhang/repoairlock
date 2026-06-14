@@ -137,6 +137,8 @@ Claude Code adapter 是 preview hook integration，不是 sandbox 执行后的�
 
 best-effort 报告生成成功时，`repoairlock run` 会生成包含 8 个章节的 HTML 报告：
 
+![RepoAirlock demo HTML 报告截图](docs/assets/demo-report.png)
+
 1. **Run Summary** — 状态、wall time、退出码、HEAD SHA
 2. **Safety Posture** — 网络模式、特权状态、环境变量 allowlist、INV-001
 3. **Repository Change Summary** — 文件/行数变更、敏感路径检测
