@@ -143,6 +143,8 @@ separate stage after sandbox execution.
 
 When best-effort report generation succeeds, `repoairlock run --repo examples/demo-repo --image alpine -- sh -c "..."` produces an HTML report with these sections:
 
+![RepoAirlock demo HTML report screenshot](docs/assets/demo-report.png)
+
 1. **Run Summary** — status, wall time, exit code, HEAD SHA
 2. **Safety Posture** — network mode, privileged status, env allowlist, INV-001
 3. **Repository Change Summary** — files/lines changed, sensitive path detection
