@@ -98,36 +98,40 @@ RepoAirlock 是一个**安全 Harness**，不是安全沙箱。当你显式启�
                         │  compare / list / doctor    │
                         └──────────────┬─────────────┘
                                        │
-                             create RunContext
+                                run 创建 RunConfig
                                        │
                         ┌──────────────▼─────────────┐
-                        │       Run Orchestrator      │
-                        │  (完整 Tier 0 流水线)       │
-                        └───────┬───────────┬────────┘
-                                │           │
-                  ┌─────────────▼───┐   ┌──▼────────────────┐
-                  │ WorkspaceManager │   │   ArtifactStore    │
-                  │  git worktree    │   │  JSONL / JSON /    │
-                  │  指纹验证        │   │  原子写入          │
-                  └─────────────┬───┘   └──▲───┬─────────────┘
-                                │          │   │
-                        ┌───────▼──────────┴───┴───────┐
-                        │         SandboxBackend       │
-                        │   DockerSandbox (安全参数)   │
-                        └───────┬──────────────────────┘
-                                │
-                  ┌─────────────▼──────────────┐
-                  │        AgentAdapter         │
-                  │  Tier 0: CommandAdapter     │
-                  │  Tier 2: ClaudeCodeAdapter  │
-                  └─────────────┬──────────────┘
-                                │
-              ┌─────────────────▼────────────────┐
-              │ PolicyEngine   │ ReportGenerator │
-              │ (12 条规则)    │ (JSON + HTML)   │
-              │ EventRecorder  │ CompareService  │
-              └─────────────────────────────────┘
+                        │       RunOrchestrator       │
+                        │ 校验 / 执行 / finalize      │
+                        └──────┬────────┬────────┬────┘
+                               │        │        │
+              ┌────────────────▼─┐  ┌───▼─────────────┐
+              │ PolicyEngine +    │  │ WorkspaceManager │
+              │ command_builder   │  │ worktree +       │
+              │ sandbox checks    │  │ 指纹验证         │
+              └───────────────────┘  └───┬─────────────┘
+                                         │
+                                         │ 隔离 worktree
+                         ┌───────────────▼────────────┐
+                         │        DockerBackend        │
+                         │ 安全参数 + 资源采样        │
+                         └───────────────┬────────────┘
+                                         │
+                                         │ stdout / stderr / exit / patch
+              ┌──────────────────────────▼──────────────────────────┐
+              │        ArtifactStore + EventRecorder                │
+              │ manifest / events.jsonl / logs / patch / integrity  │
+              └──────────────┬─────────────────────────┬───────────┘
+                             │                         │
+              ┌──────────────▼──────────────┐  ┌───────▼─────────────┐
+              │ ReportGenerator              │  │ ReplayService /     │
+              │ report.json + report.html    │  │ CompareService      │
+              └──────────────────────────────┘  │ 读取 run artifacts  │
+                                                └─────────────────────┘
 ```
+
+默认 v0.1 `run` 路径会通过 Docker backend 执行用户提供的命令。
+Claude Code adapter 是 preview hook integration，不是 sandbox 执行后的独立阶段。
 
 ## 报告示例
 
