@@ -6,6 +6,18 @@ Safety-oriented execution harness for coding agents.
 
 English | [中文](README.zh-CN.md)
 
+## 30-second verification
+
+Run the CLI health check and fast unit suite:
+
+```bash
+git clone https://github.com/ZedingZhang/repoairlock.git
+cd repoairlock
+python3.12 -m pip install -e ".[dev]"
+repoairlock doctor
+python3.12 -m pytest tests/unit -q
+```
+
 ## Problem
 
 Coding agents modify code autonomously. Without isolation, recording, and
