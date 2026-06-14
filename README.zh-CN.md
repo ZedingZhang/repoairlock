@@ -28,7 +28,7 @@ RepoAirlock 在隔离的 Docker 容器中使用 git worktree 隔离运行 coding
 | 1 | Structured Events | 导入 agent 工具调用轨迹用于过程质量分析 |
 | 2 | Enforcement (preview only) | 对单个工具调用（Bash/Edit/Write）进行执行前策略检查，需通过 Claude Code hook adapter |
 
-**当前状态：** v0.1.0-alpha release candidate。Tier 0 alpha verified。
+**当前状态：** v0.1.1-alpha。Tier 0 alpha 已验证。
 Claude Code Tier 2 hook adapter 模块为 preview only；v0.1 的 CLI `run` 路径
 使用 command adapter。
 
