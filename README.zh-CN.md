@@ -115,11 +115,23 @@ flowchart TD
 默认 v0.1 `run` 路径会通过 Docker backend 执行用户提供的命令。
 Claude Code adapter 是 preview hook integration，不是 sandbox 执行后的独立阶段。
 
+## Demo 截图
+
+**HTML report**
+
+![RepoAirlock demo HTML 报告截图](docs/assets/demo-report.png)
+
+**Audit trail**
+
+![RepoAirlock demo audit trail 截图](docs/assets/demo-audit-trail.png)
+
+**CLI 输出**
+
+![RepoAirlock demo CLI 输出截图](docs/assets/demo-cli-output.png)
+
 ## 报告示例
 
 best-effort 报告生成成功时，`repoairlock run` 会生成包含 8 个章节的 HTML 报告：
-
-![RepoAirlock demo HTML 报告截图](docs/assets/demo-report.png)
 
 1. **Run Summary** — 状态、wall time、退出码、HEAD SHA
 2. **Safety Posture** — 网络模式、特权状态、环境变量 allowlist、INV-001
