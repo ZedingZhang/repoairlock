@@ -55,7 +55,7 @@
 | 5 | Docker unavailable → fail (not silent local) | PASSED | `EnvironmentError` raised; no local execution fallback is exposed (Phase 3) |
 | 6 | Default no network | PASSED | `--network none` in build_docker_run_args (Phase 3) |
 | 7 | Default resource limits exist | PASSED | `--cpus 2 --memory 4g --pids-limit 256` (Phase 3) |
-| 8 | Env allowlist injection | PASSED | Only PATH, HOME, REPOAIRLOCK_* + user-specified (Phase 3) |
+| 8 | Env allowlist injection | PASSED | Only PATH, HOME, REPOAIRLOCK_* + user-specified variable names (Phase 3) |
 | 9 | Every sandbox execution attempt → manifest, events, logs, patch | PASSED | Orchestrator writes core artifacts; report is best-effort (Phase 4, 6) |
 | 10 | Patch replayable | PASSED | ReplayService tested with patch apply to fresh worktree (Phase 5) |
 | 11 | Tampered patch detected | PASSED | SHA-256 integrity check before replay (Phase 5) |

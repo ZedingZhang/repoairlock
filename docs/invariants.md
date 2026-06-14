@@ -43,11 +43,13 @@ status must be written.
 ## INV-005 No sensitive env var injection by default
 
 Environment variables use an allowlist. The full host environment must
-never be passed by default.
+never be passed by default. Allowlist entries are variable names only;
+inline assignments such as `TOKEN=value` must be rejected.
 
 **Test requirements:**
 - Default container env only contains allowed variables
-- Explicit `--env-allow` works
+- Explicit `--env-allow NAME` works
+- Explicit `--env-allow NAME=value` is rejected
 - Manifest records names, not values
 
 ## INV-006 Network disabled by default

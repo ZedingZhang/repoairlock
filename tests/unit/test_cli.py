@@ -6,6 +6,7 @@ from pathlib import Path
 
 from typer.testing import CliRunner
 
+from repoairlock import __version__
 from repoairlock.cli import app
 from repoairlock.core.orchestrator import RunResultSummary
 from repoairlock.models.enums import RunStatus
@@ -30,6 +31,7 @@ def test_version() -> None:
     result = runner.invoke(app, ["--version"])
     assert result.exit_code == 0
     assert "repoairlock" in result.stdout
+    assert __version__ in result.stdout
 
 
 def test_doctor_help() -> None:
