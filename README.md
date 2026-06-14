@@ -103,36 +103,41 @@ enable network access (`--network bridge`), the agent can make outbound connecti
                         │  compare / list / doctor    │
                         └──────────────┬─────────────┘
                                        │
-                             create RunContext
+                                run creates RunConfig
                                        │
                         ┌──────────────▼─────────────┐
-                        │       Run Orchestrator      │
-                        │  (full Tier 0 pipeline)     │
-                        └───────┬───────────┬────────┘
-                                │           │
-                  ┌─────────────▼───┐   ┌──▼────────────────┐
-                  │ WorkspaceManager │   │   ArtifactStore    │
-                  │  git worktree    │   │  JSONL / JSON /    │
-                  │  fingerprint     │   │  atomic writes     │
-                  └─────────────┬───┘   └──▲───┬─────────────┘
-                                │          │   │
-                        ┌───────▼──────────┴───┴───────┐
-                        │         SandboxBackend       │
-                        │   DockerSandbox (safe args)  │
-                        └───────┬──────────────────────┘
-                                │
-                  ┌─────────────▼──────────────┐
-                  │        AgentAdapter         │
-                  │  Tier 0: CommandAdapter     │
-                  │  Tier 2: ClaudeCodeAdapter  │
-                  └─────────────┬──────────────┘
-                                │
-              ┌─────────────────▼────────────────┐
-              │ PolicyEngine   │ ReportGenerator │
-              │ (12 rules)     │ (JSON + HTML)   │
-              │ EventRecorder  │ CompareService  │
-              └─────────────────────────────────┘
+                        │       RunOrchestrator       │
+                        │ validate / run / finalize   │
+                        └──────┬────────┬────────┬────┘
+                               │        │        │
+              ┌────────────────▼─┐  ┌───▼─────────────┐
+              │ PolicyEngine +    │  │ WorkspaceManager │
+              │ command_builder   │  │ worktree +       │
+              │ sandbox checks    │  │ fingerprint      │
+              └───────────────────┘  └───┬─────────────┘
+                                         │
+                                         │ isolated worktree
+                         ┌───────────────▼────────────┐
+                         │        DockerBackend        │
+                         │ safe args + resource stats  │
+                         └───────────────┬────────────┘
+                                         │
+                                         │ stdout / stderr / exit / patch
+              ┌──────────────────────────▼──────────────────────────┐
+              │        ArtifactStore + EventRecorder                │
+              │ manifest / events.jsonl / logs / patch / integrity  │
+              └──────────────┬─────────────────────────┬───────────┘
+                             │                         │
+              ┌──────────────▼──────────────┐  ┌───────▼─────────────┐
+              │ ReportGenerator              │  │ ReplayService /     │
+              │ report.json + report.html    │  │ CompareService      │
+              └──────────────────────────────┘  │ read run artifacts  │
+                                                └─────────────────────┘
 ```
+
+The default v0.1 `run` path executes the user-provided command through the
+Docker backend. The Claude Code adapter is a preview hook integration, not a
+separate stage after sandbox execution.
 
 ## Example Report
 
