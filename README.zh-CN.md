@@ -91,43 +91,25 @@ RepoAirlock 是一个**安全 Harness**，不是安全沙箱。当你显式启�
 
 ## 架构
 
-```
-                        ┌────────────────────────────┐
-                        │        repoairlock CLI       │
-                        │  run / inspect / replay /   │
-                        │  compare / list / doctor    │
-                        └──────────────┬─────────────┘
-                                       │
-                                run 创建 RunConfig
-                                       │
-                        ┌──────────────▼─────────────┐
-                        │       RunOrchestrator       │
-                        │ 校验 / 执行 / finalize      │
-                        └──────┬────────┬────────┬────┘
-                               │        │        │
-              ┌────────────────▼─┐  ┌───▼─────────────┐
-              │ PolicyEngine +    │  │ WorkspaceManager │
-              │ command_builder   │  │ worktree +       │
-              │ sandbox checks    │  │ 指纹验证         │
-              └───────────────────┘  └───┬─────────────┘
-                                         │
-                                         │ 隔离 worktree
-                         ┌───────────────▼────────────┐
-                         │        DockerBackend        │
-                         │ 安全参数 + 资源采样        │
-                         └───────────────┬────────────┘
-                                         │
-                                         │ stdout / stderr / exit / patch
-              ┌──────────────────────────▼──────────────────────────┐
-              │        ArtifactStore + EventRecorder                │
-              │ manifest / events.jsonl / logs / patch / integrity  │
-              └──────────────┬─────────────────────────┬───────────┘
-                             │                         │
-              ┌──────────────▼──────────────┐  ┌───────▼─────────────┐
-              │ ReportGenerator              │  │ ReplayService /     │
-              │ report.json + report.html    │  │ CompareService      │
-              └──────────────────────────────┘  │ 读取 run artifacts  │
-                                                └─────────────────────┘
+```mermaid
+flowchart TD
+    cli["repoairlock CLI<br/>run / inspect / replay / compare / list / doctor"]
+    cfg["RunConfig<br/>由 run 创建"]
+    orchestrator["RunOrchestrator<br/>校验 / 执行 / finalize"]
+    policy["PolicyEngine + command_builder<br/>sandbox 配置检查"]
+    workspace["WorkspaceManager<br/>detached worktree + 源仓库指纹验证"]
+    docker["DockerBackend<br/>安全 Docker 参数 + 资源采样"]
+    artifacts["ArtifactStore + EventRecorder<br/>manifest / events.jsonl / logs / patch / integrity"]
+    report["ReportGenerator<br/>report.json + report.html"]
+    replay["ReplayService + CompareService<br/>读取 run artifacts"]
+
+    cli --> cfg --> orchestrator
+    orchestrator --> policy
+    orchestrator --> workspace
+    workspace -->|隔离 worktree| docker
+    docker -->|stdout / stderr / exit / patch| artifacts
+    artifacts --> report
+    artifacts --> replay
 ```
 
 默认 v0.1 `run` 路径会通过 Docker backend 执行用户提供的命令。

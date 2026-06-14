@@ -37,10 +37,10 @@
 **Started:** 2026-06-11
 
 ### Deliverables
-- [x] Polished README with: Problem, Solution, Capability Tiers, 5-Minute Demo, Safety Guarantees, Explicit Non-Guarantees, ASCII Architecture Diagram, Example Report, Supported Adapters, Development Roadmap, Limitations, Attribution
+- [x] Polished README with: Problem, Solution, Capability Tiers, 5-Minute Demo, Safety Guarantees, Explicit Non-Guarantees, Mermaid Architecture Diagram, Example Report, Supported Adapters, Development Roadmap, Limitations, Attribution
 - [x] Demo script (`examples/demo.sh`) — walks through full pipeline: doctor, run, INV-001 verification, list, inspect, replay, policy demo, HTML report
 - [x] Release notes (`RELEASE.md`) — v0.1.0-alpha overview, features, installation, quick start, known limitations, compatibility
-- [x] Updated architecture diagram (ASCII art in README)
+- [x] Updated architecture diagram (Mermaid flowchart in README)
 - [x] Added demo HTML report screenshot (`docs/assets/demo-report.png`) to both READMEs
 - [x] README uses no exaggerated language: no "完全安全", "工业级", or "生产就绪"
 - [x] MVP completion checklist verified (16/16 criteria met)

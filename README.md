@@ -96,43 +96,25 @@ enable network access (`--network bridge`), the agent can make outbound connecti
 
 ## Architecture
 
-```
-                        ┌────────────────────────────┐
-                        │        repoairlock CLI       │
-                        │  run / inspect / replay /   │
-                        │  compare / list / doctor    │
-                        └──────────────┬─────────────┘
-                                       │
-                                run creates RunConfig
-                                       │
-                        ┌──────────────▼─────────────┐
-                        │       RunOrchestrator       │
-                        │ validate / run / finalize   │
-                        └──────┬────────┬────────┬────┘
-                               │        │        │
-              ┌────────────────▼─┐  ┌───▼─────────────┐
-              │ PolicyEngine +    │  │ WorkspaceManager │
-              │ command_builder   │  │ worktree +       │
-              │ sandbox checks    │  │ fingerprint      │
-              └───────────────────┘  └───┬─────────────┘
-                                         │
-                                         │ isolated worktree
-                         ┌───────────────▼────────────┐
-                         │        DockerBackend        │
-                         │ safe args + resource stats  │
-                         └───────────────┬────────────┘
-                                         │
-                                         │ stdout / stderr / exit / patch
-              ┌──────────────────────────▼──────────────────────────┐
-              │        ArtifactStore + EventRecorder                │
-              │ manifest / events.jsonl / logs / patch / integrity  │
-              └──────────────┬─────────────────────────┬───────────┘
-                             │                         │
-              ┌──────────────▼──────────────┐  ┌───────▼─────────────┐
-              │ ReportGenerator              │  │ ReplayService /     │
-              │ report.json + report.html    │  │ CompareService      │
-              └──────────────────────────────┘  │ read run artifacts  │
-                                                └─────────────────────┘
+```mermaid
+flowchart TD
+    cli["repoairlock CLI<br/>run / inspect / replay / compare / list / doctor"]
+    cfg["RunConfig<br/>created by run"]
+    orchestrator["RunOrchestrator<br/>validate / run / finalize"]
+    policy["PolicyEngine + command_builder<br/>sandbox configuration checks"]
+    workspace["WorkspaceManager<br/>detached worktree + source fingerprint"]
+    docker["DockerBackend<br/>safe Docker args + resource stats"]
+    artifacts["ArtifactStore + EventRecorder<br/>manifest / events.jsonl / logs / patch / integrity"]
+    report["ReportGenerator<br/>report.json + report.html"]
+    replay["ReplayService + CompareService<br/>read run artifacts"]
+
+    cli --> cfg --> orchestrator
+    orchestrator --> policy
+    orchestrator --> workspace
+    workspace -->|isolated worktree| docker
+    docker -->|stdout / stderr / exit / patch| artifacts
+    artifacts --> report
+    artifacts --> replay
 ```
 
 The default v0.1 `run` path executes the user-provided command through the
