@@ -1,7 +1,7 @@
 from pathlib import Path
 
 APP_NAME = "repoairlock"
-VERSION = "0.1.0-alpha"
+VERSION = "0.1.1-alpha"
 
 DEFAULT_RUNS_DIR = Path.home() / ".repoairlock" / "runs"
 DEFAULT_TIMEOUT_SECONDS = 1800

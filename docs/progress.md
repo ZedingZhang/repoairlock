@@ -33,13 +33,16 @@
 
 ## Phase 9: Stabilization & Public Release
 
-**Status:** Release verification in progress
+**Status:** v0.1.1-alpha release preparation in progress
 **Started:** 2026-06-11
 
 ### Deliverables
 - [x] Polished README with: Problem, Solution, Capability Tiers, 5-Minute Demo, Safety Guarantees, Explicit Non-Guarantees, Mermaid Architecture Diagram, Example Report, Supported Adapters, Development Roadmap, Limitations, Attribution
 - [x] Demo script (`examples/demo.sh`) — walks through full pipeline: doctor, run, INV-001 verification, list, inspect, replay, policy demo, HTML report
-- [x] Release notes (`RELEASE.md`) — v0.1.0-alpha overview, features, installation, quick start, known limitations, compatibility
+- [x] Release notes (`RELEASE.md`) — v0.1.1-alpha overview, features, installation, quick start, known limitations, compatibility
+- [x] Changelog (`CHANGELOG.md`) — v0.1.1-alpha and v0.1.0-alpha history
+- [x] Package metadata synchronized to v0.1.1-alpha
+- [x] Build/release workflow added for `python -m build`, `twine check`, TestPyPI, PyPI, and Trusted Publishing
 - [x] Updated architecture diagram (Mermaid flowchart in README)
 - [x] Added demo screenshots for HTML report, audit trail, and CLI output to both READMEs
 - [x] README uses no exaggerated language: no "完全安全", "工业级", or "生产就绪"
@@ -109,10 +112,10 @@ $ SKIP_DOCKER_MOUNT_TESTS=0 pytest tests/integration tests/e2e -q -v
 
 ```bash
 $ repoairlock --help   # 7 commands listed
-$ repoairlock --version # repoairlock v0.1.0-alpha
+$ repoairlock --version # repoairlock v0.1.1-alpha
 ```
 
-### Known Limitations (v0.1.0-alpha)
+### Known Limitations (v0.1.1-alpha)
 - Docker daemon required (no podman/buildah support)
 - Tier 0 cannot observe agent internal tool calls, LLM tokens, or per-command reasoning
 - Network filtering limited to on/off (no domain allowlisting)
@@ -122,7 +125,7 @@ $ repoairlock --version # repoairlock v0.1.0-alpha
 
 ### Project Complete
 
-RepoAirlock v0.1.0 alpha release candidate is ready for public preview. The project answers nine
+RepoAirlock v0.1.1-alpha is prepared for public alpha distribution. The project answers nine
 core questions through artifacts, tests, and reports:
 
 1. Where did the agent execute? (detached worktree, Docker container)
