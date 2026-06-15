@@ -1,6 +1,9 @@
 # RepoAirlock
 
 [![CI](https://github.com/ZedingZhang/repoairlock/actions/workflows/ci.yml/badge.svg)](https://github.com/ZedingZhang/repoairlock/actions/workflows/ci.yml)
+[![PyPI version](https://img.shields.io/pypi/v/repoairlock.svg)](https://pypi.org/project/repoairlock/)
+[![Python versions](https://img.shields.io/pypi/pyversions/repoairlock.svg)](https://pypi.org/project/repoairlock/)
+[![License](https://img.shields.io/github/license/ZedingZhang/repoairlock.svg)](LICENSE)
 
 Safety-oriented execution harness for coding agents.
 

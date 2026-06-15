@@ -1,16 +1,24 @@
 [build-system]
-requires = ["setuptools>=75", "wheel"]
+requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "repoairlock"
-version = "0.1.0-alpha"
-description = "Safety-oriented execution harness for coding agents — alpha candidate"
+version = "0.1.1-alpha"
+description = "Safety-oriented execution harness for coding agents"
 readme = "README.md"
 requires-python = ">=3.12"
-license = {text = "MIT"}
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [
     {name = "Zeding Zhang"}
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
 ]
 dependencies = [
     "typer>=0.15",
@@ -19,16 +27,28 @@ dependencies = [
     "pyyaml>=6.0",
 ]
 
+[project.urls]
+Homepage = "https://github.com/ZedingZhang/repoairlock"
+Repository = "https://github.com/ZedingZhang/repoairlock"
+Issues = "https://github.com/ZedingZhang/repoairlock/issues"
+Changelog = "https://github.com/ZedingZhang/repoairlock/blob/main/CHANGELOG.md"
+
 [project.optional-dependencies]
 dev = [
+    "build>=1.2",
     "pytest>=8",
     "ruff>=0.9",
     "mypy>=1.14",
+    "twine>=6.0",
     "types-pyyaml",
 ]
 
 [project.scripts]
 repoairlock = "repoairlock.cli:app"
+
+[tool.setuptools.package-data]
+"repoairlock.policy" = ["defaults.yaml"]
+"repoairlock.reporting" = ["templates/*.j2"]
 
 [tool.ruff]
 target-version = "py312"
